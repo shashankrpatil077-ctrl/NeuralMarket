@@ -43,7 +43,8 @@ app = FastAPI(title="NeuralMarket - Mission-Critical Autonomous Economy on Arc")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://tiny-morning-fb2c.shashankrpatil077.workers.dev","*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -1044,7 +1045,7 @@ async def get_agents():
         for name, agent in AGENTS.items()
     }
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
     count = await database.get_transaction_count()
     return {
