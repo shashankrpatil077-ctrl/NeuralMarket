@@ -6,6 +6,7 @@ import asyncio
 import aiohttp
 import hashlib
 import hmac
+import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -1086,3 +1087,9 @@ async def get_premium_insight(request: Request):
             "X-Payment-Network": "ARC-TESTNET",
         }
     )
+# ... (all your other code is above this) ...
+
+if __name__ == "__main__":
+    # Railway passes a dynamic PORT, fallback to 8000 for local dev
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("auction_engine:app", host="0.0.0.0", port=port)
