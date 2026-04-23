@@ -1,10 +1,9 @@
-import json
-_orig_dumps = json.dumps
+import json as _json_orig
+_json_dumps_orig = _json_orig.dumps
 def _safe_dumps(obj, *args, **kwargs):
     kwargs.setdefault('default', str)
-    return _orig_dumps(obj, *args, **kwargs)
-json.dumps = _safe_dumps
-
+    return _json_dumps_orig(obj, *args, **kwargs)
+_json_orig.dumps = _safe_dumps
 import os
 import json
 import re
