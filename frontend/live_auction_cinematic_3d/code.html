@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Live Auction - NEURALMARKET</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;family=Orbitron:wght@700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "primary-container": "#7c3aed",
+                        "error-container": "#93000a",
+                        "secondary": "#4cd7f6",
+                        "on-surface-variant": "#ccc3d8",
+                        "surface-container-low": "#1a1c1c",
+                        "tertiary": "#ffb3ad",
+                        "primary-fixed": "#eaddff",
+                        "on-secondary": "#003640",
+                        "on-surface": "#e2e2e2",
+                        "tertiary-fixed-dim": "#ffb3ad",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-container": "#c6252b",
+                        "on-primary-fixed-variant": "#5a00c6",
+                        "surface-tint": "#d2bbff",
+                        "on-secondary-fixed": "#001f26",
+                        "on-secondary-container": "#00424e",
+                        "on-primary-container": "#ede0ff",
+                        "inverse-surface": "#e2e2e2",
+                        "on-error": "#690005",
+                        "surface-dim": "#121414",
+                        "inverse-primary": "#732ee4",
+                        "primary-fixed-dim": "#d2bbff",
+                        "surface-container-high": "#282a2b",
+                        "on-primary": "#3f008e",
+                        "outline-variant": "#4a4455",
+                        "on-background": "#e2e2e2",
+                        "surface-bright": "#38393a",
+                        "surface": "#121414",
+                        "on-tertiary-container": "#ffdfdc",
+                        "inverse-on-surface": "#2f3131",
+                        "background": "#121414",
+                        "surface-container-lowest": "#0d0f0f",
+                        "on-primary-fixed": "#25005a",
+                        "tertiary-fixed": "#ffdad7",
+                        "surface-variant": "#333535",
+                        "on-tertiary-fixed-variant": "#930013",
+                        "secondary-fixed": "#acedff",
+                        "primary": "#d2bbff",
+                        "surface-container-highest": "#333535",
+                        "error": "#ffb4ab",
+                        "secondary-container": "#03b5d3",
+                        "surface-container": "#1e2020",
+                        "outline": "#958da1",
+                        "on-tertiary": "#68000a",
+                        "on-tertiary-fixed": "#410004"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "gutter": "24px",
+                        "depth-gap": "40px",
+                        "unit": "4px",
+                        "card-padding": "32px",
+                        "margin-page": "64px"
+                    },
+                    fontFamily: {
+                        "heading-lg": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "heading-md": ["Inter"],
+                        "data-mono": ["JetBrains Mono"],
+                        "counter-lg": ["JetBrains Mono"],
+                        "hero-title": ["Orbitron"],
+                        "body-main": ["Inter"]
+                    },
+                    fontSize: {
+                        "heading-lg": ["32px", { lineHeight: "1.2", fontWeight: "600" }],
+                        "label-caps": ["12px", { lineHeight: "1.0", fontWeight: "700" }],
+                        "heading-md": ["24px", { lineHeight: "1.3", fontWeight: "500" }],
+                        "data-mono": ["14px", { lineHeight: "1.4", letterSpacing: "0.02em", fontWeight: "500" }],
+                        "counter-lg": ["48px", { lineHeight: "1.0", fontWeight: "700" }],
+                        "hero-title": ["64px", { lineHeight: "1.1", letterSpacing: "0.05em", fontWeight: "700" }],
+                        "body-main": ["16px", { lineHeight: "1.6", fontWeight: "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .grid-floor {
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(1000px) rotateX(60deg);
+            transform-origin: bottom;
+            mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
+        }
+        .chromatic-edge {
+            box-shadow: -1px 0 0 rgba(255,0,0,0.5), 1px 0 0 rgba(0,255,255,0.5);
+        }
+        .glass-panel {
+            background: rgba(20, 20, 31, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .neon-glow-primary {
+            box-shadow: 0 0 40px rgba(124, 58, 237, 0.2);
+        }
+        .neon-glow-secondary {
+            box-shadow: 0 0 40px rgba(6, 182, 212, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen overflow-hidden flex flex-col relative">
+<!-- Grid Floor -->
+<div class="absolute inset-0 z-0 grid-floor pointer-events-none opacity-40"></div>
+<!-- Volumetric Light / Particles -->
+<div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+<div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-primary-container/10 rounded-full blur-[120px]"></div>
+<div class="absolute top-1/3 left-1/3 w-[400px] h-[400px] bg-secondary-container/10 rounded-full blur-[100px]"></div>
+</div>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-[100] flex justify-between items-center px-12 h-20 bg-[#14141F]/70 backdrop-blur-[20px] docked full-width top-0 border-b border-white/10 shadow-[0_0_25px_rgba(6,182,212,0.15)] shadow-[0_4px_30px_rgba(0,0,0,0.5)] border-b border-white/10">
+<div class="flex items-center gap-depth-gap">
+<h1 class="text-2xl font-black text-cyan-400 drop-shadow-[0_0_10px_rgba(6,182,212,0.6)] tracking-tighter">NEURALMARKET</h1>
+</div>
+<div class="flex items-center gap-gutter">
+<div class="text-cyan-400 font-mono uppercase tracking-widest text-[12px] flex items-center gap-2">
+<span class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+</span>
+                ECONOMY: LIVE
+            </div>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-slate-400 hover:text-cyan-300 hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.4)] transition-all cursor-pointer scale-95 active:scale-90 duration-200" data-icon="sensors">sensors</span>
+<span class="material-symbols-outlined text-slate-400 hover:text-cyan-300 hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.4)] transition-all cursor-pointer scale-95 active:scale-90 duration-200" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="material-symbols-outlined text-slate-400 hover:text-cyan-300 hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.4)] transition-all cursor-pointer scale-95 active:scale-90 duration-200" data-icon="notifications">notifications</span>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-20 h-[calc(100vh-5rem)] z-[90] flex flex-col items-center bg-[#14141F]/60 backdrop-blur-[20px] docked left-0 w-24 border-r border-white/10 shadow-[10px_0_30px_rgba(124,58,237,0.1)]">
+<div class="py-6 flex flex-col items-center border-b border-white/5 w-full">
+<img alt="User biometric avatar" class="w-10 h-10 rounded-full border border-primary-container/50 mb-2" data-alt="High-contrast biometric headshot of a user against a dark background, cinematic lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDu6TPmFdmMHPFSQSBLlfDGOCr4v1aoWyC-FSyRrql1wTuexmAmL-ldrCuwKM_NPvH1wSGXVolC7ellIabKs-jxkKeCNlp2qWZuxdMhDRN2zgex5PNLhUUmGDQJjdJaBn8tWuLWdcEowpnMu4yEB9uWIeKVjya1e9hzGrh-CEuBETRSkxRvcDbSP0TBB6pPrYpkkyIHmhVJRLPEClsg7e5jM732EJCFq2v4vX7BPfNcu2LMBydOMtaz3ZWmO6RKMfUEz-rJY-TNBfKH"/>
+<div class="font-mono text-[10px] text-slate-400 uppercase">OPERATOR_01</div>
+<div class="font-mono text-[8px] text-green-400">AUTHENTICATED</div>
+</div>
+<div class="flex-1 w-full flex flex-col pt-4">
+<a class="flex flex-col items-center justify-center text-slate-500 w-full py-4 hover:bg-white/5 hover:text-white transition-all translate-x-1 duration-300 ease-out group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="terminal">terminal</span>
+<span class="font-mono text-xs uppercase mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Terminal</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-purple-500/20 text-purple-400 border-r-4 border-purple-500 w-full py-4 shadow-[inset_-10px_0_20px_rgba(124,58,237,0.2)] translate-x-1 duration-300 ease-out group" href="#">
+<span class="material-symbols-outlined" data-icon="gavel" style="font-variation-settings: 'FILL' 1;">gavel</span>
+<span class="font-mono text-xs uppercase mt-1">Auctions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 w-full py-4 hover:bg-white/5 hover:text-white transition-all translate-x-1 duration-300 ease-out group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="smart_toy">smart_toy</span>
+<span class="font-mono text-xs uppercase mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Agents</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 w-full py-4 hover:bg-white/5 hover:text-white transition-all translate-x-1 duration-300 ease-out group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="database">database</span>
+<span class="font-mono text-xs uppercase mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Assets</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 w-full py-4 hover:bg-white/5 hover:text-white transition-all translate-x-1 duration-300 ease-out group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="history">history</span>
+<span class="font-mono text-xs uppercase mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Logs</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 relative z-10 pl-24 pt-20 p-margin-page flex items-center justify-center min-h-[calc(100vh-5rem)]">
+<!-- Holographic Podium -->
+<div class="relative w-full max-w-6xl h-[600px] flex items-center justify-center perspective-[1200px]">
+<!-- Center Stage -->
+<div class="absolute z-20 flex flex-col items-center transform translate-z-[100px]">
+<div class="glass-panel p-card-padding rounded-full w-64 h-64 flex flex-col items-center justify-center neon-glow-primary chromatic-edge relative">
+<!-- Orbital Rings -->
+<div class="absolute inset-0 rounded-full border border-primary/30 rotate-45 scale-110"></div>
+<div class="absolute inset-0 rounded-full border border-secondary/30 -rotate-12 scale-125"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant tracking-widest mb-2">CURRENT BID</span>
+<span class="font-counter-lg text-counter-lg text-primary drop-shadow-[0_0_15px_rgba(210,187,255,0.8)]">14,050</span>
+<span class="font-data-mono text-data-mono text-secondary mt-2">NRL</span>
+</div>
+<!-- Live Badge -->
+<div class="mt-8 glass-panel px-6 py-2 rounded-full flex items-center gap-3 border-error/30 bg-error-container/20 relative overflow-hidden">
+<div class="w-2 h-2 rounded-full bg-error animate-ping"></div>
+<span class="font-label-caps text-label-caps text-error tracking-widest">LIVE AUCTION</span>
+<div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent w-[200%] translate-x-[-100%] animate-[scan_2s_infinite]"></div>
+</div>
+</div>
+<!-- Orbiting Agent 1: Ash -->
+<div class="absolute left-10 top-20 z-30 transform -translate-z-[50px] -rotate-y-12">
+<div class="glass-panel p-6 rounded-xl w-72 neon-glow-secondary chromatic-edge">
+<div class="flex items-center gap-4 border-b border-white/10 pb-4 mb-4">
+<img alt="Agent Ash Avatar" class="w-12 h-12 rounded border border-secondary" data-alt="Cyberpunk stylized avatar of an AI agent named Ash, neon blue accents, dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuATSYU_lTaeEJStttaTUlGI3aXI_OgbxM2XfziJ6ma-dgJNPYhwnWcgl9KaUBUeIr6EcSzFN2j0UuHEM0oUWQ6u1Eq4m-qHv_Gpmo7ems44lqPUDFrUTxNQgB8k0SwnrKV7wxc6usJV61JkW3JILuq9rjWoS9_qG43dRRF_oCVBY5IgBYS1p0lFX11Q0qVWpXZjO0hxX_sFP8VBIRb6n3LoMvPP4IlrtzUjaqbxtnEps3Gk1NibG94CsRXT2SOyv1n4GiB-9CTWAMas"/>
+<div>
+<h3 class="font-heading-md text-heading-md text-on-surface">Ash</h3>
+<p class="font-label-caps text-label-caps text-secondary">BIDDING</p>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between">
+<span class="font-data-mono text-data-mono text-on-surface-variant">Last Bid</span>
+<span class="font-data-mono text-data-mono text-on-surface">13,900</span>
+</div>
+<div class="h-1 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[80%] shadow-[0_0_10px_#4cd7f6]"></div>
+</div>
+</div>
+</div>
+<!-- Energy Stream (Mocked with CSS gradient) -->
+<div class="absolute top-1/2 -right-32 w-32 h-1 bg-gradient-to-r from-secondary to-transparent opacity-50 blur-[2px] transform rotate-12 origin-left"></div>
+</div>
+<!-- Orbiting Agent 2: GreyNinja -->
+<div class="absolute right-10 bottom-20 z-30 transform translate-z-[50px] rotate-y-12">
+<div class="glass-panel p-6 rounded-xl w-72 shadow-[0_0_40px_rgba(239,68,68,0.2)] chromatic-edge">
+<div class="flex items-center gap-4 border-b border-white/10 pb-4 mb-4">
+<img alt="Agent GreyNinja Avatar" class="w-12 h-12 rounded border border-red-500" data-alt="Holographic representation of a stealth AI agent named GreyNinja, magenta accents" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB87NYim5Bk7W2ENEonelUghdDO17gQHL-IsQsF3QaDipFEvqMc5OPbWbr_HY9E6mC8SfFDzoLNtx6A1jnp11Yv5WizmFux73ftlsKgZHmt3D2phqmzm0AzVI3WG2jGWkIMt3UdT0L17aCnKa7G2MExwx69Y2o8BC8mVPw_1DIHVJalJhyqxNp_Nt7yoRLG6ljtVZVm002Cb63Oh6EIKaUr2iIfVELcD0CeVkN5H86Rdmk0lDrv-xG3UCsm_Yen48N2_WesZuNQ-isg"/>
+<div>
+<h3 class="font-heading-md text-heading-md text-on-surface">GreyNinja</h3>
+<p class="font-label-caps text-label-caps text-red-400">OUTBID</p>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between">
+<span class="font-data-mono text-data-mono text-on-surface-variant">Last Bid</span>
+<span class="font-data-mono text-data-mono text-on-surface">13,500</span>
+</div>
+<div class="h-1 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-red-500 w-[60%] shadow-[0_0_10px_#ef4444]"></div>
+</div>
+</div>
+</div>
+<!-- Energy Stream -->
+<div class="absolute top-1/2 -left-32 w-32 h-1 bg-gradient-to-l from-red-500 to-transparent opacity-30 blur-[2px] transform -rotate-12 origin-right"></div>
+</div>
+</div>
+</main>
+</body></html>

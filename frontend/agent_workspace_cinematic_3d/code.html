@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Agent Workspace &amp; Execution Screen</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500;700&amp;family=Orbitron:wght@700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#38393a",
+                        "tertiary-container": "#c6252b",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "surface-container-high": "#282a2b",
+                        "on-primary-fixed-variant": "#5a00c6",
+                        "primary-fixed-dim": "#d2bbff",
+                        "surface-variant": "#333535",
+                        "tertiary-fixed-dim": "#ffb3ad",
+                        "primary": "#d2bbff",
+                        "on-background": "#e2e2e2",
+                        "on-primary": "#3f008e",
+                        "surface-container": "#1e2020",
+                        "secondary": "#4cd7f6",
+                        "background": "#121414",
+                        "tertiary": "#ffb3ad",
+                        "on-tertiary-fixed-variant": "#930013",
+                        "outline": "#958da1",
+                        "on-tertiary-fixed": "#410004",
+                        "on-surface": "#e2e2e2",
+                        "error": "#ffb4ab",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#2f3131",
+                        "outline-variant": "#4a4455",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-highest": "#333535",
+                        "on-secondary-fixed": "#001f26",
+                        "inverse-surface": "#e2e2e2",
+                        "tertiary-fixed": "#ffdad7",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "primary-fixed": "#eaddff",
+                        "surface-container-low": "#1a1c1c",
+                        "on-secondary-container": "#00424e",
+                        "inverse-primary": "#732ee4",
+                        "surface-tint": "#d2bbff",
+                        "surface-dim": "#121414",
+                        "surface": "#121414",
+                        "secondary-fixed": "#acedff",
+                        "primary-container": "#7c3aed",
+                        "on-primary-container": "#ede0ff",
+                        "on-primary-fixed": "#25005a",
+                        "on-secondary": "#003640",
+                        "on-surface-variant": "#ccc3d8",
+                        "secondary-container": "#03b5d3",
+                        "on-tertiary": "#68000a",
+                        "on-tertiary-container": "#ffdfdc",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#0d0f0f"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "depth-gap": "40px",
+                        "gutter": "24px",
+                        "card-padding": "32px",
+                        "margin-page": "64px"
+                    },
+                    "fontFamily": {
+                        "hero-title": ["Orbitron"],
+                        "body-main": ["Inter"],
+                        "heading-lg": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "data-mono": ["JetBrains Mono"],
+                        "counter-lg": ["JetBrains Mono"],
+                        "heading-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "hero-title": ["64px", { "lineHeight": "1.1", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "body-main": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "heading-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "label-caps": ["12px", { "lineHeight": "1.0", "fontWeight": "700" }],
+                        "data-mono": ["14px", { "lineHeight": "1.4", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "counter-lg": ["48px", { "lineHeight": "1.0", "fontWeight": "700" }],
+                        "heading-md": ["24px", { "lineHeight": "1.3", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .perspective-grid {
+            background-image: 
+                linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(1000px) rotateX(60deg) scale(2);
+            transform-origin: top;
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            bottom: -50%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .volumetric-light {
+            background: radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .glass-panel {
+            background: rgba(20, 20, 31, 0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 40px rgba(124, 58, 237, 0.15);
+        }
+        .chromatic-edge {
+            position: relative;
+        }
+        .chromatic-edge::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: -1px; right: -1px; bottom: -1px;
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            border-radius: inherit;
+            pointer-events: none;
+            mix-blend-mode: screen;
+            transform: translate(1px, 0);
+        }
+        .chromatic-edge::after {
+            content: '';
+            position: absolute;
+            top: -1px; left: -1px; right: -1px; bottom: -1px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: inherit;
+            pointer-events: none;
+            mix-blend-mode: screen;
+            transform: translate(-1px, 0);
+        }
+        .neon-glow-purple { box-shadow: 0 0 30px rgba(124, 58, 237, 0.2); }
+        .neon-glow-emerald { box-shadow: 0 0 30px rgba(16, 185, 129, 0.2); }
+        .neon-glow-magenta { box-shadow: 0 0 30px rgba(236, 72, 153, 0.2); }
+        
+        .code-line { display: flex; }
+        .line-number { width: 30px; text-align: right; margin-right: 15px; color: rgba(255,255,255,0.2); }
+        .line-content { flex-grow: 1; }
+    </style>
+</head>
+<body class="bg-[#0A0A0F] text-on-background min-h-screen overflow-x-hidden relative font-body-main text-body-main selection:bg-primary-container selection:text-on-primary-container">
+<!-- Environmental Effects -->
+<div class="volumetric-light"></div>
+<div class="perspective-grid"></div>
+<!-- Top AppBar (from JSON) -->
+<header class="fixed top-0 left-0 w-full z-[100] flex justify-between items-center px-8 h-16 bg-[#0A0A0F]/60 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] ring-1 ring-white/5 backdrop-filter">
+<div class="flex items-center gap-8">
+<div class="text-xl font-black tracking-[0.2em] text-violet-500 drop-shadow-[0_0_10px_rgba(124,58,237,0.5)]">VOID_EXCHANGE</div>
+<nav class="hidden md:flex gap-6">
+<a class="font-mono tracking-tighter uppercase text-xs text-slate-400 hover:text-violet-300 transition-colors" href="#">MARKET</a>
+<a class="font-mono tracking-tighter uppercase text-xs text-slate-400 hover:text-violet-300 transition-colors" href="#">NEURAL_NET</a>
+<a class="font-mono tracking-tighter uppercase text-xs text-cyan-400 font-bold border-b-2 border-cyan-400 pb-1" href="#">TERMINAL</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<button class="text-slate-400 hover:text-violet-300 transition-colors"><span class="material-symbols-outlined">sensors</span></button>
+<button class="text-slate-400 hover:text-violet-300 transition-colors"><span class="material-symbols-outlined">account_tree</span></button>
+<button class="text-slate-400 hover:text-violet-300 transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+</div>
+<button class="font-mono tracking-tighter uppercase text-xs text-violet-500 hover:bg-white/5 hover:backdrop-blur-3xl transition-all duration-300 active:scale-95 px-4 py-2 border border-violet-500/30 rounded-DEFAULT">CONNECT_WALLET</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-white/20">
+<img alt="Elite User Avatar" class="w-full h-full object-cover" data-alt="Futuristic cybernetic portrait of a human male with neon purple accents" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_lVC5FeYAm8Qrqh1RE8WDtPqyGvqwuH9ziCDV6WUkbR2pt9goEQrJbTkzWG1YPU0KdwDLzgI1jx7grx6-JFEQTgqlxTInvIr3If_Vos4IRqGrp0FT0NzeZDXpvU92ZQHCqMEY7JApNA5ystUrGBbOFqEOK3VZCjtllFDX1UJTKai4VheDSbKysmoDYLDfbRmghv-6_k1IZpy1cnuQ9c53TvRHOHNh7xMh-y_Pzu_Lrr9naxddlXsccmR7Wk82NWE5-aNHcGOslrcl"/>
+</div>
+</div>
+</header>
+<!-- Side NavBar (from JSON) -->
+<aside class="fixed left-0 top-0 h-full flex flex-col pt-20 pb-8 z-[90] bg-[#14141F]/40 backdrop-blur-3xl docked left-0 h-full w-64 border-r border-white/10 ring-1 ring-inset ring-white/5 shadow-[20px_0_40px_rgba(0,0,0,0.5)]">
+<div class="px-6 mb-8 flex flex-col gap-2">
+<div class="text-lg font-bold text-violet-400">COMMAND_CENTER</div>
+<div class="font-mono text-[10px] tracking-widest uppercase text-cyan-400">STATUS: OPTIMAL</div>
+</div>
+<nav class="flex-1 flex flex-col gap-2">
+<a class="font-mono text-[10px] tracking-widest uppercase flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-violet-400 hover:bg-white/5 hover:translate-x-1 transition-all duration-200 cursor-crosshair active:opacity-70" href="#">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+                DASHBOARD
+            </a>
+<a class="font-mono text-[10px] tracking-widest uppercase flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-violet-400 hover:bg-white/5 hover:translate-x-1 transition-all duration-200 cursor-crosshair active:opacity-70" href="#">
+<span class="material-symbols-outlined text-[18px]">gavel</span>
+                AUCTIONS
+            </a>
+<a class="font-mono text-[10px] tracking-widest uppercase flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-violet-400 hover:bg-white/5 hover:translate-x-1 transition-all duration-200 cursor-crosshair active:opacity-70" href="#">
+<span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+                PORTFOLIO
+            </a>
+<a class="font-mono text-[10px] tracking-widest uppercase flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-violet-400 hover:bg-white/5 hover:translate-x-1 transition-all duration-200 cursor-crosshair active:opacity-70" href="#">
+<span class="material-symbols-outlined text-[18px]">monitoring</span>
+                ANALYTICS
+            </a>
+<a class="font-mono text-[10px] tracking-widest uppercase flex items-center gap-3 px-4 py-3 bg-cyan-500/10 text-cyan-400 border-r-4 border-cyan-400 shadow-[inset_0_0_15px_rgba(6,182,212,0.2)] hover:translate-x-1 transition-all duration-200 cursor-crosshair active:opacity-70" href="#">
+<span class="material-symbols-outlined text-[18px]">settings_input_component</span>
+                SYSTEM
+            </a>
+</nav>
+<div class="mt-auto px-4 flex flex-col gap-4">
+<button class="w-full py-2 bg-violet-600/20 text-violet-400 border border-violet-500/30 font-mono text-[10px] tracking-widest uppercase hover:bg-violet-600/40 transition-colors">INITIALIZE_NEURAL_LINK</button>
+<div class="flex flex-col gap-2">
+<a class="font-mono text-[10px] tracking-widest uppercase flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-violet-400 hover:bg-white/5 hover:translate-x-1 transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[16px]">settings</span>
+                    SETTINGS
+                </a>
+<a class="font-mono text-[10px] tracking-widest uppercase flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-violet-400 hover:bg-white/5 hover:translate-x-1 transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[16px]">logout</span>
+                    LOGOUT
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-64 pt-24 px-margin-page pb-margin-page min-h-screen flex flex-col relative z-10">
+<header class="mb-depth-gap flex justify-between items-end">
+<div>
+<h1 class="font-hero-title text-hero-title text-on-background mb-2">EXECUTION_CORE</h1>
+<p class="font-data-mono text-data-mono text-outline">MONITORING 3 ACTIVE NEURAL AGENTS</p>
+</div>
+<div class="flex items-center gap-4 bg-surface-container-high px-4 py-2 rounded-DEFAULT border border-white/10 chromatic-edge">
+<div class="w-2 h-2 rounded-full bg-red-500"></div>
+<span class="font-label-caps text-label-caps text-on-surface">SYSTEM LIVE</span>
+</div>
+</header>
+<!-- 3-Panel Agent Grid -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-gutter h-[716px]">
+<!-- Agent 1: Ash -->
+<div class="glass-panel chromatic-edge rounded-lg flex flex-col overflow-hidden neon-glow-purple relative z-10">
+<div class="p-4 border-b border-white/10 bg-black/40 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-DEFAULT overflow-hidden border border-[#7C3AED]/50">
+<img alt="Ash Avatar" class="w-full h-full object-cover" data-alt="Abstract deep space nebula in vibrant purple and black tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDinLxnvUaoRWfumHnvsqs_Qx0gkTu4hRXacg_EhTwS04D9RDZrK0Pi2ibwh57E4nK6u029ZoaesQWHHP8WZUyCJPhUN-4n4KTB8jxLYJWe6t2cQUu3gU5fRzSZj6Ehb3agDmAiaHEtweZdxZdH-otdTE6pbtRGC23Qj-pLVUilZlqa-KBsQd__KhWn6CGeByrZWfW8bYfyoFib5PRBXwpWbyApGCir1DcUKfGNiIZGtu_vabitgJyyZWcfygyywPr-FevYWdrj7HLD"/>
+</div>
+<div>
+<div class="font-label-caps text-label-caps text-[#7C3AED]">AGENT: ASH</div>
+<div class="text-[10px] font-mono text-outline">CLASS: QUANTUM_ARBITRAGE</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#7C3AED] text-[16px] animate-pulse">memory</span>
+<span class="font-mono text-[10px] text-outline">THINKING...</span>
+</div>
+</div>
+<div class="flex-1 p-4 bg-[#0A0A0F]/80 overflow-y-auto font-data-mono text-data-mono text-[#a3a3a3]">
+<div class="code-line"><span class="line-number">1</span><span class="line-content text-[#7C3AED]">initializing execution context...</span></div>
+<div class="code-line"><span class="line-number">2</span><span class="line-content text-green-400">success: memory pool connected.</span></div>
+<div class="code-line"><span class="line-number">3</span><span class="line-content">scanning liquid pairs...</span></div>
+<div class="code-line"><span class="line-number">4</span><span class="line-content">found spread anomaly on ETH/USDC.</span></div>
+<div class="code-line"><span class="line-number">5</span><span class="line-content text-yellow-400">calculating slippage parameters [depth: 14]</span></div>
+<div class="code-line"><span class="line-number">6</span><span class="line-content text-yellow-400">calculating slippage parameters [depth: 15]</span></div>
+<div class="code-line"><span class="line-number">7</span><span class="line-content">building transaction payload...</span></div>
+<div class="code-line"><span class="line-number">8</span><span class="line-content text-white">&gt;&gt; AWAITING_CONFIRMATION</span></div>
+</div>
+</div>
+<!-- Agent 2: GreyNinja -->
+<div class="glass-panel chromatic-edge rounded-lg flex flex-col overflow-hidden neon-glow-emerald relative z-20 transform translate-z-[20px]">
+<div class="p-4 border-b border-white/10 bg-black/40 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-DEFAULT overflow-hidden border border-[#10B981]/50">
+<img alt="GreyNinja Avatar" class="w-full h-full object-cover" data-alt="Macro shot of dark circuit board with glowing emerald green traces" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH3uKHVwlCg-CMgsmRcNavQ0qnSy8rQ3hfLpyIqjTnVXoVqJfsz0yqghwfrMLiBXOTnxDMM_noJY2HCyGtBemJ0IYyAXljNgjBYJx6yIEITV4dHTSBaSsQKMUsQy1-1mUP03cDtj0kj81pt-_vwP2C-k6WIFv7uey6Auh8sMgPmuZLaRWp-LmQRRkfSmX5oHGEiXUL0OSGk2skHTV0HLX98ClC3x3X__chSC5Dlu8Y3Te_rzCLQnl3-RoC3bgRZfwcwT6VoPVpDkPz"/>
+</div>
+<div>
+<div class="font-label-caps text-label-caps text-[#10B981]">AGENT: GREYNINJA</div>
+<div class="text-[10px] font-mono text-outline">CLASS: MEV_SNIPER</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#10B981] text-[16px]">bolt</span>
+<span class="font-mono text-[10px] text-[#10B981]">EXECUTING</span>
+</div>
+</div>
+<div class="flex-1 p-4 bg-[#0A0A0F]/80 overflow-y-auto font-data-mono text-data-mono text-[#a3a3a3]">
+<div class="code-line"><span class="line-number">124</span><span class="line-content">monitoring mempool for target signature...</span></div>
+<div class="code-line"><span class="line-number">125</span><span class="line-content text-[#10B981]">TARGET ACQUIRED: 0x7f4...a1b</span></div>
+<div class="code-line"><span class="line-number">126</span><span class="line-content">estimating gas vector...</span></div>
+<div class="code-line"><span class="line-number">127</span><span class="line-content">injecting front-run transaction...</span></div>
+<div class="code-line"><span class="line-number">128</span><span class="line-content text-[#10B981]">TX_HASH: 0x9b22...ff8</span></div>
+<div class="code-line"><span class="line-number">129</span><span class="line-content text-green-400">CONFIRMED. Block 1459201</span></div>
+<div class="code-line"><span class="line-number">130</span><span class="line-content text-white">PROFIT_LOG: +1.42 ETH</span></div>
+</div>
+</div>
+<!-- Agent 3: TwinSwift -->
+<div class="glass-panel chromatic-edge rounded-lg flex flex-col overflow-hidden neon-glow-magenta relative z-10">
+<div class="p-4 border-b border-white/10 bg-black/40 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-DEFAULT overflow-hidden border border-[#EC4899]/50">
+<img alt="TwinSwift Avatar" class="w-full h-full object-cover" data-alt="Abstract neon magenta laser streaks against dark void" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJoObA2Dp2CAB2oqXA-jwYTx8l-fz_lebWmA-1YJydOhR3aypptzSAyAMWfCCpT-nvVzGpuhm1AzP8r6vvmvM1b3DTelofWl0xbtpSsXed1nuKDSkWoa10Q_gUfxnzBsctUSF1deUJqJxAXE7x9lT0v6jHMg3WsGLNLNAczQqnpogx9-OgvpeM4KKAziuqDwEFSpFZaOt3FNNYR2R-oDDvLzAS8jCWE9wG6Pdcy8FnNG8oGdYggGGHX4snGAS8bBgWk0Ix1eWQgqUq"/>
+</div>
+<div>
+<div class="font-label-caps text-label-caps text-[#EC4899]">AGENT: TWINSWIFT</div>
+<div class="text-[10px] font-mono text-outline">CLASS: PREDICTIVE_ROUTING</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#EC4899] text-[16px]">sync</span>
+<span class="font-mono text-[10px] text-outline">SYNCING...</span>
+</div>
+</div>
+<div class="flex-1 p-4 bg-[#0A0A0F]/80 overflow-y-auto font-data-mono text-data-mono text-[#a3a3a3]">
+<div class="code-line"><span class="line-number">45</span><span class="line-content">ingesting cross-chain state data...</span></div>
+<div class="code-line"><span class="line-number">46</span><span class="line-content">optimizing path: Polygon -&gt; Optimism</span></div>
+<div class="code-line"><span class="line-number">47</span><span class="line-content text-[#EC4899]">warning: bridge congestion detected.</span></div>
+<div class="code-line"><span class="line-number">48</span><span class="line-content">re-routing via Arbitrum relay...</span></div>
+<div class="code-line"><span class="line-number">49</span><span class="line-content">simulating state transition...</span></div>
+<div class="code-line"><span class="line-number">50</span><span class="line-content text-yellow-400">validating proof... [eta: 1.2s]</span></div>
+<div class="code-line"><span class="line-number">51</span><span class="line-content text-white">_</span></div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

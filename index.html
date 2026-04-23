@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralMarket — Autonomous AI Economy on Arc</title>
+<!-- Google Fonts: Orbitron, Inter, JetBrains Mono -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap">
+<!-- Tailwind CSS via CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "surface": "#121414",
+        "surface-dim": "#121414",
+        "surface-bright": "#38393a",
+        "surface-container-lowest": "#0d0f0f",
+        "surface-container-low": "#1a1c1c",
+        "surface-container": "#1e2020",
+        "surface-container-high": "#282a2b",
+        "surface-container-highest": "#333535",
+        "primary": "#d2bbff",
+        "primary-container": "#7c3aed",
+        "secondary": "#4cd7f6",
+        "secondary-container": "#03b5d3",
+        "tertiary": "#ffb3ad",
+        "tertiary-container": "#c6252b",
+        "error": "#ffb4ab",
+        "error-container": "#93000a",
+        "background": "#121414",
+        "on-background": "#e2e2e2",
+        "on-surface": "#e2e2e2",
+        "on-surface-variant": "#ccc3d8",
+        "outline": "#958da1",
+        "outline-variant": "#4a4455",
+        "inverse-surface": "#e2e2e2",
+        "inverse-on-surface": "#2f3131",
+      },
+      fontFamily: {
+        'hero-title': ['Orbitron', 'sans-serif'],
+        'body-main': ['Inter', 'sans-serif'],
+        'data-mono': ['JetBrains Mono', 'monospace'],
+        'label-caps': ['JetBrains Mono', 'monospace'],
+        'counter-lg': ['JetBrains Mono', 'monospace'],
+      },
+      borderRadius: {
+        'DEFAULT': '0.25rem',
+        'lg': '0.5rem',
+        'xl': '0.75rem',
+      },
+      spacing: {
+        'unit': '4px',
+        'gutter': '24px',
+        'depth-gap': '40px',
+        'card-padding': '32px',
+        'margin-page': '64px',
+      }
+    }
+  }
+}
+</script>
+<style>
+  /* ========== GLOBAL DARK BACKGROUND ========== */
+  body {
+    background-color: #0A0A0F;
+    color: #E5E5E5;
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    overflow-x: hidden;
+  }
+  /* ========== PERSPECTIVE GRID FLOOR ========== */
+  .perspective-grid {
+    background-image: 
+      linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    transform: perspective(1000px) rotateX(60deg);
+    transform-origin: top center;
+    position: fixed;
+    top: 50%;
+    left: 0;
+    right: 0;
+    bottom: -50%;
+    z-index: -1;
+    pointer-events: none;
+    mask-image: linear-gradient(to bottom, transparent, black 60%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 60%);
+  }
+  /* ========== GLASS PANELS ========== */
+  .glass-panel {
+    background: rgba(20, 20, 31, 0.5);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  .glass-panel-light {
+    background: rgba(20, 20, 31, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  /* ========== CHROMATIC ABERRATION EDGE ========== */
+  .chromatic-edge {
+    position: relative;
+  }
+  .chromatic-edge::before, .chromatic-edge::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border: 1px solid transparent;
+    border-radius: inherit;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+  .chromatic-edge::before { border-color: rgba(255,0,0,0.3); transform: translate(1px, 0); }
+  .chromatic-edge::after { border-color: rgba(0,255,255,0.3); transform: translate(-1px, 0); }
+  /* ========== NEON GLOWS ========== */
+  .neon-glow-purple { box-shadow: 0 0 30px rgba(124, 58, 237, 0.3); }
+  .neon-glow-cyan { box-shadow: 0 0 30px rgba(6, 182, 212, 0.3); }
+  .neon-glow-magenta { box-shadow: 0 0 30px rgba(236, 72, 153, 0.3); }
+  .neon-glow-emerald { box-shadow: 0 0 30px rgba(16, 185, 129, 0.3); }
+  /* ========== TERMINAL STYLE ========== */
+  .terminal-text {
+    font-family: 'JetBrains Mono', monospace;
+    color: #00FF88;
+    background: rgba(10,10,15,0.8);
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,255,136,0.2);
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  .terminal-text .negotiation { color: #F59E0B; }
+  .terminal-text .success { color: #10B981; }
+  .terminal-text .error { color: #EF4444; }
+  .terminal-text .info { color: #06B6D4; }
+  .terminal-text .winner { color: #7C3AED; }
+  /* ========== LIVE BADGE PULSE ========== */
+  .live-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+    padding: 4px 12px; border-radius: 20px;
+  }
+  .live-badge .dot {
+    width: 8px; height: 8px; background: #EF4444; border-radius: 50%;
+    box-shadow: 0 0 8px #EF4444; animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+  /* ========== ORBITING RINGS ========== */
+  .orbital-ring {
+    position: absolute; top:50%; left:50%; transform: translate(-50%,-50%);
+    border-radius: 50%; border: 0.5px solid rgba(255,255,255,0.1); pointer-events: none;
+  }
+  /* ========== NAVIGATION ========== */
+  .nav-link { transition: all 0.2s; }
+  .nav-link:hover { color: #06B6D4; text-shadow: 0 0 10px rgba(6,182,212,0.5); }
+  /* ========== SCROLL SMOOTH ========== */
+  html { scroll-behavior: smooth; }
+</style>
+</head>
+<body class="dark">
+
+<!-- ========== PERSPECTIVE GRID BACKGROUND ========== -->
+<div class="perspective-grid"></div>
+
+<!-- ========== STICKY NAVIGATION BAR ========== -->
+<nav class="fixed top-0 left-0 right-0 z-50 glass-panel flex items-center justify-center gap-6 px-8 py-3">
+  <a href="#welcome" class="nav-link text-white font-bold font-hero-title text-sm tracking-wider">WELCOME</a>
+  <a href="#submit" class="nav-link text-slate-400 font-label-caps text-xs">SUBMIT</a>
+  <a href="#auction" class="nav-link text-slate-400 font-label-caps text-xs">AUCTION</a>
+  <a href="#workspace" class="nav-link text-slate-400 font-label-caps text-xs">WORKSPACE</a>
+  <a href="#validation" class="nav-link text-slate-400 font-label-caps text-xs">VERDICT</a>
+  <a href="#settlement" class="nav-link text-slate-400 font-label-caps text-xs">SETTLEMENT</a>
+  <a href="#history" class="nav-link text-slate-400 font-label-caps text-xs">HISTORY</a>
+  <span class="live-badge ml-4"><span class="dot"></span><span class="font-label-caps text-xs text-red-400">LIVE</span></span>
+</nav>
+
+<!-- ========== SECTION 0: WELCOME LANDING ========== -->
+<section id="welcome" class="min-h-screen flex items-center justify-center pt-20">
+  <div class="text-center relative">
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full border border-white/5 opacity-50"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full border border-cyan-500/20 -rotate-12 opacity-30"></div>
+    <h1 class="font-hero-title text-7xl bg-gradient-to-r from-cyan-400 via-white to-purple-500 bg-clip-text text-transparent drop-shadow-lg mb-4" style="text-shadow: 0 0 40px rgba(124,58,237,0.5);">
+      NEURALMARKET
+    </h1>
+    <p class="font-heading-md text-2xl text-slate-300 mb-8">Autonomous AI Economy — Live on Arc</p>
+    <a href="#submit" class="glass-panel px-10 py-4 rounded-lg inline-flex items-center gap-3 font-label-caps tracking-widest text-lg text-cyan-400 hover:text-white hover:scale-105 transition-all duration-300">
+      <span class="material-symbols-outlined">fingerprint</span> ENTER
+    </a>
+    <div class="mt-8 flex justify-center gap-6 text-xs font-data-mono text-slate-500">
+      <span class="flex items-center gap-1"><span class="w-2 h-2 bg-green-500 rounded-full"></span> ARC TESTNET</span>
+      <span>3 AGENTS ACTIVE</span>
+      <span>ECONOMY: LIVE</span>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SECTION 1: SUBMIT TASK ========== -->
+<section id="submit" class="min-h-screen flex items-center justify-center pt-20">
+  <div class="glass-panel rounded-2xl p-10 max-w-3xl w-full mx-4 chromatic-edge">
+    <h2 class="font-hero-title text-4xl text-cyan-400 mb-2 text-center">What do you need built?</h2>
+    <p class="font-data-mono text-sm text-slate-400 text-center mb-8">Describe your task and set a maximum budget</p>
+    
+    <div class="relative mb-6">
+      <input type="text" id="taskDesc" placeholder="e.g., Write a haiku about blockchain" 
+        class="w-full bg-[#0A0A0F] border border-white/10 rounded-xl px-6 py-4 font-data-mono text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all">
+    </div>
+    
+    <div class="mb-6">
+      <label class="font-label-caps text-xs text-slate-400 mb-2 block">Max Budget: <span id="budgetValue" class="text-cyan-400">0.01</span> USDC</label>
+      <input type="range" id="maxBudget" min="0.001" max="0.01" step="0.001" value="0.01"
+        class="w-full h-2 bg-surface-container-high rounded-full appearance-none cursor-pointer accent-cyan-500"
+        oninput="document.getElementById('budgetValue').textContent = parseFloat(this.value).toFixed(3)">
+    </div>
+    
+    <button onclick="submitTask()" id="submitBtn"
+      class="w-full py-4 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-xl font-hero-title text-lg tracking-wider text-white hover:scale-[1.02] active:scale-95 transition-all duration-300 shadow-lg hover:shadow-cyan-500/25">
+      ⚡ ENGAGE AUCTION
+    </button>
+    
+    <div id="taskStatus" class="mt-4 text-center font-data-mono text-sm"></div>
+  </div>
+</section>
+
+<!-- ========== SECTION 2: LIVE AUCTION ========== -->
+<section id="auction" class="min-h-screen flex items-center justify-center pt-20">
+  <div class="w-full max-w-6xl mx-4">
+    <div class="glass-panel rounded-2xl p-8 chromatic-edge">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="font-hero-title text-3xl text-purple-400">🔴 LIVE AUCTION</h2>
+        <span class="live-badge"><span class="dot"></span><span class="font-label-caps text-xs text-red-400">BIDDING NOW</span></span>
+      </div>
+      <div id="auctionContent" class="text-center text-slate-500 py-8">
+        Submit a task to start the auction...
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SECTION 3: AGENT WORKSPACE ========== -->
+<section id="workspace" class="min-h-screen flex items-center justify-center pt-20">
+  <div class="w-full max-w-6xl mx-4">
+    <div class="glass-panel rounded-2xl p-8 chromatic-edge">
+      <h2 class="font-hero-title text-3xl text-cyan-400 mb-6">💻 AGENT WORKSPACE</h2>
+      <div id="workspaceContent" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="glass-panel-light rounded-xl p-6 text-center">
+          <div class="font-label-caps text-purple-400 mb-2">Ash (CODE)</div>
+          <div id="ashOutput" class="terminal-text text-xs h-32">Waiting...</div>
+        </div>
+        <div class="glass-panel-light rounded-xl p-6 text-center">
+          <div class="font-label-caps text-emerald-400 mb-2">GreyNinja (DATA)</div>
+          <div id="greyOutput" class="terminal-text text-xs h-32">Waiting...</div>
+        </div>
+        <div class="glass-panel-light rounded-xl p-6 text-center">
+          <div class="font-label-caps text-magenta-400 mb-2">TwinSwift (WRITE)</div>
+          <div id="twinOutput" class="terminal-text text-xs h-32">Waiting...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SECTION 4: VALIDATION & VERDICT ========== -->
+<section id="validation" class="min-h-screen flex items-center justify-center pt-20">
+  <div class="w-full max-w-6xl mx-4">
+    <div class="glass-panel rounded-2xl p-8 chromatic-edge neon-glow-emerald">
+      <h2 class="font-hero-title text-3xl text-emerald-400 mb-6">⚖️ AI COUNCIL VERDICT</h2>
+      <div id="verdictContent" class="text-center py-8 text-slate-500">
+        Awaiting task completion...
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SECTION 5: ECONOMIC SETTLEMENT ========== -->
+<section id="settlement" class="min-h-screen flex items-center justify-center pt-20">
+  <div class="w-full max-w-6xl mx-4">
+    <div class="glass-panel rounded-2xl p-8 chromatic-edge">
+      <h2 class="font-hero-title text-3xl text-secondary mb-6">💰 SETTLEMENT</h2>
+      <div id="settlementContent" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="glass-panel-light rounded-xl p-6">
+          <div class="font-label-caps text-xs text-slate-400 mb-2">PLATFORM FEE</div>
+          <div id="platformFee" class="font-counter-lg text-3xl text-cyan-400">--</div>
+        </div>
+        <div class="glass-panel-light rounded-xl p-6">
+          <div class="font-label-caps text-xs text-slate-400 mb-2">QUALITY BONUS</div>
+          <div id="qualityBonus" class="font-counter-lg text-3xl text-green-400">--</div>
+        </div>
+        <div class="glass-panel-light rounded-xl p-6">
+          <div class="font-label-caps text-xs text-slate-400 mb-2">SLASH PENALTY</div>
+          <div id="slashPenalty" class="font-counter-lg text-3xl text-red-400">--</div>
+        </div>
+        <div class="glass-panel-light rounded-xl p-6">
+          <div class="font-label-caps text-xs text-slate-400 mb-2">ERC-8004 CREDENTIAL</div>
+          <div id="credential" class="font-counter-lg text-3xl text-purple-400">--</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SECTION 6: TRANSACTION HISTORY ========== -->
+<section id="history" class="min-h-screen flex items-center justify-center pt-20">
+  <div class="w-full max-w-6xl mx-4">
+    <div class="glass-panel rounded-2xl p-8 chromatic-edge">
+      <h2 class="font-hero-title text-3xl text-slate-300 mb-6">📊 TRANSACTION HISTORY</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left font-data-mono text-sm">
+          <thead class="border-b border-white/10 text-slate-400">
+            <tr>
+              <th class="py-3 px-4">Task</th>
+              <th class="py-3 px-4">Winner</th>
+              <th class="py-3 px-4">Quality</th>
+              <th class="py-3 px-4">Amount</th>
+              <th class="py-3 px-4">TX ID</th>
+            </tr>
+          </thead>
+          <tbody id="txTableBody">
+            <tr><td colspan="5" class="py-8 text-center text-slate-600">No transactions yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== JAVASCRIPT: BACKEND INTEGRATION ========== -->
+<script>
+  const API_BASE = "https://web-production-6cc4f.up.railway.app";
+  let eventSource = null;
+
+  // Connect to SSE stream
+  function connectSSE() {
+    if (eventSource) eventSource.close();
+    eventSource = new EventSource(`${API_BASE}/events`);
+    
+    eventSource.addEventListener('negotiation_start', (e) => {
+      const data = JSON.parse(e.data);
+      document.getElementById('auctionContent').innerHTML = `<div class="text-cyan-400 font-data-mono">Negotiation started...</div>`;
+    });
+    
+    eventSource.addEventListener('agent_speak', (e) => {
+      const data = JSON.parse(e.data);
+      const auctionDiv = document.getElementById('auctionContent');
+      auctionDiv.innerHTML += `<div class="font-data-mono text-sm py-1"><span class="text-purple-400">${data.agent}:</span> ${data.message} <span class="text-cyan-400">($${data.bid.toFixed(6)})</span></div>`;
+      auctionDiv.scrollTop = auctionDiv.scrollHeight;
+    });
+    
+    eventSource.addEventListener('validation_complete', (e) => {
+      const data = JSON.parse(e.data);
+      document.getElementById('verdictContent').innerHTML = `
+        <div class="font-hero-title text-4xl text-emerald-400 mb-4">🏆 ${data.winner} WINS</div>
+        <div class="font-counter-lg text-6xl text-emerald-300">${data.scores[data.winner]}</div>
+        <div class="font-label-caps text-sm text-slate-400 mt-2">QUALITY SCORE</div>
+      `;
+    });
+    
+    eventSource.addEventListener('task_complete', (e) => {
+      fetchTransactions();
+    });
+  }
+
+  // Submit task to backend
+  async function submitTask() {
+    const desc = document.getElementById('taskDesc').value;
+    const budget = parseFloat(document.getElementById('maxBudget').value);
+    const statusEl = document.getElementById('taskStatus');
+    const btnEl = document.getElementById('submitBtn');
+    
+    if (!desc) { statusEl.innerHTML = '<span class="text-red-400">Please enter a task description.</span>'; return; }
+    statusEl.innerHTML = '<span class="text-cyan-400">⏳ Submitting...</span>';
+    btnEl.disabled = true;
+    
+    try {
+      const resp = await fetch(`${API_BASE}/run_elite_loop`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({description: desc, max_budget: budget})
+      });
+      const result = await resp.json();
+      if (result.status === 'success') {
+        statusEl.innerHTML = '<span class="text-green-400">✅ Task accepted!</span>';
+        document.getElementById('auctionContent').innerHTML = '<div class="text-cyan-400 font-data-mono">Auction starting...</div>';
+        // Update agent outputs
+        if (result.phase_3_all_outputs) {
+          result.phase_3_all_outputs.forEach(out => {
+            if (out.agent === 'Ash') document.getElementById('ashOutput').textContent = out.output?.substring(0,200) || '...';
+            if (out.agent === 'GreyNinja') document.getElementById('greyOutput').textContent = out.output?.substring(0,200) || '...';
+            if (out.agent === 'TwinSwift') document.getElementById('twinOutput').textContent = out.output?.substring(0,200) || '...';
+          });
+        }
+        // Update settlement panel
+        const payments = result.phase_6_payments || {};
+        document.getElementById('platformFee').textContent = payments.fee ? '✅ Collected' : '--';
+        document.getElementById('qualityBonus').textContent = payments.bonus ? '✅ Awarded' : '--';
+        document.getElementById('slashPenalty').textContent = payments.slash ? '⚠️ Applied' : '--';
+        document.getElementById('credential').textContent = payments.credential ? '✅ Issued' : '--';
+      } else {
+        statusEl.innerHTML = `<span class="text-red-400">❌ Error</span>`;
+      }
+    } catch(err) {
+      statusEl.innerHTML = `<span class="text-red-400">Connection error</span>`;
+    }
+    btnEl.disabled = false;
+    setTimeout(() => { statusEl.innerHTML = ''; }, 5000);
+  }
+
+  // Fetch transaction history
+  async function fetchTransactions() {
+    try {
+      const resp = await fetch(`${API_BASE}/transactions`);
+      const data = await resp.json();
+      const tbody = document.getElementById('txTableBody');
+      if (data.transactions?.length) {
+        tbody.innerHTML = data.transactions.slice(-10).reverse().map(t => `
+          <tr class="border-b border-white/5 hover:bg-white/5">
+            <td class="py-3 px-4">${t.task?.substring(0,30) || 'N/A'}</td>
+            <td class="py-3 px-4 text-purple-400">${t.winner || 'N/A'}</td>
+            <td class="py-3 px-4 ${t.quality_score > 80 ? 'text-green-400' : t.quality_score > 60 ? 'text-yellow-400' : 'text-red-400'}">${t.quality_score || '--'}</td>
+            <td class="py-3 px-4 text-cyan-400">$${(t.amount_usdc || 0).toFixed(6)}</td>
+            <td class="py-3 px-4 font-mono text-xs text-slate-500"><a href="https://testnet.arcscan.app/tx/${t.tx_id}" target="_blank" class="hover:text-cyan-400">${t.tx_id?.substring(0,10) || '--'}...</a></td>
+          </tr>
+        `).join('');
+      }
+    } catch(err) {
+      console.error('Failed to fetch transactions', err);
+    }
+  }
+
+  // Initialize
+  window.onload = () => {
+    connectSSE();
+    fetchTransactions();
+    setInterval(fetchTransactions, 10000);
+  };
+</script>
+
+</body>
+</html>
