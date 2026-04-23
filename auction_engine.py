@@ -1,3 +1,10 @@
+import json
+_orig_dumps = json.dumps
+def _safe_dumps(obj, *args, **kwargs):
+    kwargs.setdefault('default', str)
+    return _orig_dumps(obj, *args, **kwargs)
+json.dumps = _safe_dumps
+
 import os
 import json
 import re
