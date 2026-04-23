@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Paste your real Railway public HTTPS URL (Railway → service → Settings → Networking). Example: https://neuralmarket-production-xxxx.up.railway.app — no trailing slash. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https: wss:; img-src 'self' data: https:;">
+    <meta name="neuralmarket-api" content="">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NeuralMarket — Autonomous AI Economy on Arc</title>
@@ -168,6 +171,12 @@ tailwind.config = {
 </head>
 <body class="dark">
 
+<div id="nm-deploy-banner" class="hidden fixed top-0 left-0 right-0 z-[60] bg-amber-950/95 border-b border-amber-500/40 text-amber-100 text-xs sm:text-sm px-3 py-2.5 text-center font-data-mono leading-relaxed max-h-[40vh] overflow-y-auto">
+  <strong class="text-amber-300">Backend URL missing or invalid.</strong>
+  <span class="text-amber-100/90">net::ERR_NAME_NOT_RESOLVED means the browser cannot find that hostname (old Railway URL deleted, or typo).</span>
+  <span class="block mt-1 text-amber-200/80">In <a href="https://railway.app" class="underline text-cyan-300 hover:text-cyan-200" target="_blank" rel="noopener">Railway</a> open your service → <strong>Settings → Networking</strong> → copy the public <strong>HTTPS</strong> domain. Put it in this repo’s <code class="text-cyan-300">index.html</code> as <code class="text-cyan-300">&lt;meta name="neuralmarket-api" content="https://…"&gt;</code> (no trailing slash), commit, redeploy Cloudflare. Or test: add <code class="text-cyan-300">?api=https://YOUR-SERVICE.up.railway.app</code> to this page’s URL.</span>
+</div>
+
 <!-- ========== PERSPECTIVE GRID BACKGROUND ========== -->
 <div class="perspective-grid"></div>
 
@@ -334,38 +343,143 @@ tailwind.config = {
 
 <!-- ========== JAVASCRIPT: BACKEND INTEGRATION ========== -->
 <script>
-  const API_BASE = "https://web-production-6cc4f.up.railway.app";
-  let eventSource = null;
+  /**
+   * Optional fallback when meta neuralmarket-api is empty (same as setting the meta tag).
+   * Example: 'https://neuralmarket-production-xxxx.up.railway.app'
+   */
+  const RAILWAY_API_BASE = '';
 
-  // Connect to SSE stream
+  /** Hostnames that no longer resolve — treat as unset so the UI stops hammering DNS. */
+  const INVALID_API_HOSTS = ['web-production-9287d.up.railway.app'];
+
+  function sanitizeApiBase(raw) {
+    const s = (raw || '').trim().replace(/\/$/, '');
+    if (!s) return '';
+    try {
+      const u = new URL(s);
+      if (u.protocol !== 'https:' && u.protocol !== 'http:') return '';
+      const h = u.hostname.toLowerCase();
+      if (INVALID_API_HOSTS.includes(h)) return '';
+      return s;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function getApiBase() {
+    if (typeof window !== 'undefined' && window.NEURALMARKET_API_BASE)
+      return sanitizeApiBase(String(window.NEURALMARKET_API_BASE));
+
+    try {
+      const q = new URLSearchParams(location.search).get('api');
+      if (q) return sanitizeApiBase(q);
+    } catch (_) {}
+
+    const meta = document.querySelector('meta[name="neuralmarket-api"]');
+    const fromMeta = (meta && meta.getAttribute('content') || '').trim();
+    if (fromMeta) return sanitizeApiBase(fromMeta);
+
+    const host = (location.hostname || '').toLowerCase();
+    if (host === 'localhost' || host === '127.0.0.1')
+      return 'http://127.0.0.1:8000';
+
+    const separateStaticHost =
+      host.endsWith('.workers.dev') ||
+      host.endsWith('.pages.dev') ||
+      host.endsWith('github.io');
+
+    if (separateStaticHost) {
+      const rail = sanitizeApiBase(typeof RAILWAY_API_BASE === 'string' ? RAILWAY_API_BASE : '');
+      if (rail) return rail;
+      return '';
+    }
+
+    if (location.protocol === 'http:' || location.protocol === 'https:') return '';
+    return 'http://127.0.0.1:8000';
+  }
+  const API_BASE = getApiBase();
+
+  function updateDeployBanner() {
+    const el = document.getElementById('nm-deploy-banner');
+    if (!el) return;
+    const host = (location.hostname || '').toLowerCase();
+    const staticHost =
+      host.endsWith('.workers.dev') ||
+      host.endsWith('.pages.dev') ||
+      host.endsWith('github.io');
+    if (staticHost && !API_BASE) el.classList.remove('hidden');
+    else el.classList.add('hidden');
+  }
+  let eventSource = null;
+  let sseReconnectTimer = null;
+  let sseBackoffMs = 2000;
+
   function connectSSE() {
     if (eventSource) eventSource.close();
-    eventSource = new EventSource(`${API_BASE}/events`);
-    
+    if (sseReconnectTimer) clearTimeout(sseReconnectTimer);
+    if (!API_BASE) {
+      const ac = document.getElementById('auctionContent');
+      if (ac && ac.textContent.indexOf('Submit a task') !== -1)
+        ac.innerHTML = '<div class="text-amber-400 font-data-mono text-sm px-2">Live stream paused: set API URL (see banner) or use <code class="text-cyan-300">?api=</code> with your Railway HTTPS root.</div>';
+      return;
+    }
+    const url = `${API_BASE}/events`;
+    eventSource = new EventSource(url);
+
     eventSource.addEventListener('negotiation_start', (e) => {
-      const data = JSON.parse(e.data);
-      document.getElementById('auctionContent').innerHTML = `<div class="text-cyan-400 font-data-mono">Negotiation started...</div>`;
+      try {
+        JSON.parse(e.data);
+        document.getElementById('auctionContent').innerHTML = `<div class="text-cyan-400 font-data-mono">Negotiation started...</div>`;
+      } catch (_) {}
     });
-    
+
     eventSource.addEventListener('agent_speak', (e) => {
-      const data = JSON.parse(e.data);
-      const auctionDiv = document.getElementById('auctionContent');
-      auctionDiv.innerHTML += `<div class="font-data-mono text-sm py-1"><span class="text-purple-400">${data.agent}:</span> ${data.message} <span class="text-cyan-400">($${data.bid.toFixed(6)})</span></div>`;
-      auctionDiv.scrollTop = auctionDiv.scrollHeight;
+      try {
+        const data = JSON.parse(e.data);
+        const bid = typeof data.bid === 'number' ? data.bid : parseFloat(data.bid) || 0;
+        const auctionDiv = document.getElementById('auctionContent');
+        const row = document.createElement('div');
+        row.className = 'font-data-mono text-sm py-1';
+        const who = document.createElement('span');
+        who.className = 'text-purple-400';
+        who.textContent = (data.agent || '?') + ': ';
+        const tail = document.createElement('span');
+        tail.className = 'text-cyan-400';
+        tail.textContent = ' ($' + bid.toFixed(6) + ')';
+        row.appendChild(who);
+        row.appendChild(document.createTextNode(data.message || ''));
+        row.appendChild(tail);
+        auctionDiv.appendChild(row);
+        auctionDiv.scrollTop = auctionDiv.scrollHeight;
+      } catch (_) {}
     });
-    
+
     eventSource.addEventListener('validation_complete', (e) => {
-      const data = JSON.parse(e.data);
-      document.getElementById('verdictContent').innerHTML = `
-        <div class="font-hero-title text-4xl text-emerald-400 mb-4">🏆 ${data.winner} WINS</div>
-        <div class="font-counter-lg text-6xl text-emerald-300">${data.scores[data.winner]}</div>
+      try {
+        const data = JSON.parse(e.data);
+        const score = (data.scores && data.winner) ? data.scores[data.winner] : '—';
+        document.getElementById('verdictContent').innerHTML = `
+        <div class="font-hero-title text-4xl text-emerald-400 mb-4">🏆 ${data.winner || '—'} WINS</div>
+        <div class="font-counter-lg text-6xl text-emerald-300">${score}</div>
         <div class="font-label-caps text-sm text-slate-400 mt-2">QUALITY SCORE</div>
       `;
+      } catch (_) {}
     });
-    
-    eventSource.addEventListener('task_complete', (e) => {
+
+    eventSource.addEventListener('task_complete', () => {
       fetchTransactions();
     });
+
+    eventSource.onopen = () => { sseBackoffMs = 2000; };
+
+    eventSource.onerror = () => {
+      if (eventSource.readyState === EventSource.CLOSED) {
+        sseReconnectTimer = setTimeout(() => {
+          sseBackoffMs = Math.min(sseBackoffMs * 2, 60000);
+          connectSSE();
+        }, sseBackoffMs);
+      }
+    };
   }
 
   // Submit task to backend
@@ -374,7 +488,11 @@ tailwind.config = {
     const budget = parseFloat(document.getElementById('maxBudget').value);
     const statusEl = document.getElementById('taskStatus');
     const btnEl = document.getElementById('submitBtn');
-    
+
+    if (!API_BASE) {
+      statusEl.innerHTML = '<span class="text-amber-400">Configure Railway URL in index.html (meta neuralmarket-api) or add ?api=https://… to the page URL.</span>';
+      return;
+    }
     if (!desc) { statusEl.innerHTML = '<span class="text-red-400">Please enter a task description.</span>'; return; }
     statusEl.innerHTML = '<span class="text-cyan-400">⏳ Submitting...</span>';
     btnEl.disabled = true;
@@ -385,11 +503,25 @@ tailwind.config = {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({description: desc, max_budget: budget})
       });
-      const result = await resp.json();
+      const raw = await resp.text();
+      let result = {};
+      try { result = raw ? JSON.parse(raw) : {}; } catch (pe) {
+        statusEl.innerHTML = `<span class="text-red-400">Invalid response (${resp.status})</span>`;
+        return;
+      }
+      if (!resp.ok) {
+        let detail = result.detail || result.message || raw.slice(0, 160);
+        if (detail && typeof detail !== 'string') detail = JSON.stringify(detail).slice(0, 200);
+        statusEl.textContent = '';
+        const errSpan = document.createElement('span');
+        errSpan.className = 'text-red-400';
+        errSpan.textContent = 'Request failed (' + resp.status + '): ' + (detail || 'unknown');
+        statusEl.appendChild(errSpan);
+        return;
+      }
       if (result.status === 'success') {
         statusEl.innerHTML = '<span class="text-green-400">✅ Task accepted!</span>';
         document.getElementById('auctionContent').innerHTML = '<div class="text-cyan-400 font-data-mono">Auction starting...</div>';
-        // Update agent outputs
         if (result.phase_3_all_outputs) {
           result.phase_3_all_outputs.forEach(out => {
             if (out.agent === 'Ash') document.getElementById('ashOutput').textContent = out.output?.substring(0,200) || '...';
@@ -397,17 +529,16 @@ tailwind.config = {
             if (out.agent === 'TwinSwift') document.getElementById('twinOutput').textContent = out.output?.substring(0,200) || '...';
           });
         }
-        // Update settlement panel
         const payments = result.phase_6_payments || {};
         document.getElementById('platformFee').textContent = payments.fee ? '✅ Collected' : '--';
         document.getElementById('qualityBonus').textContent = payments.bonus ? '✅ Awarded' : '--';
         document.getElementById('slashPenalty').textContent = payments.slash ? '⚠️ Applied' : '--';
         document.getElementById('credential').textContent = payments.credential ? '✅ Issued' : '--';
       } else {
-        statusEl.innerHTML = `<span class="text-red-400">❌ Error</span>`;
+        statusEl.innerHTML = `<span class="text-red-400">❌ ${result.detail || 'Server returned non-success'}</span>`;
       }
     } catch(err) {
-      statusEl.innerHTML = `<span class="text-red-400">Connection error</span>`;
+      statusEl.innerHTML = `<span class="text-red-400">Network error: ${err && err.message ? err.message : 'check API URL / server'}</span>`;
     }
     btnEl.disabled = false;
     setTimeout(() => { statusEl.innerHTML = ''; }, 5000);
@@ -415,8 +546,10 @@ tailwind.config = {
 
   // Fetch transaction history
   async function fetchTransactions() {
+    if (!API_BASE) return;
     try {
       const resp = await fetch(`${API_BASE}/transactions`);
+      if (!resp.ok) return;
       const data = await resp.json();
       const tbody = document.getElementById('txTableBody');
       if (data.transactions?.length) {
@@ -437,6 +570,7 @@ tailwind.config = {
 
   // Initialize
   window.onload = () => {
+    updateDeployBanner();
     connectSSE();
     fetchTransactions();
     setInterval(fetchTransactions, 10000);
