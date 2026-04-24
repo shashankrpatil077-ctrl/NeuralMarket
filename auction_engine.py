@@ -780,6 +780,17 @@ async def _run_elite_loop_bg(request: TaskRequest):
     except Exception as e:
         print(f"⚠️ Formal specification skipped: {e}")
 
+    await sse_queue.put({
+        "event": "orchestrator_complete",
+        "analysis": {
+            "primary_capability": bank_data.get("primary_capability"),
+            "complexity": bank_data.get("complexity"),
+            "base_price": bank_data.get("base_price"),
+            "reasoning": bank_data.get("reasoning", ""),
+        },
+        "timestamp": datetime.now().isoformat()
+    })
+
     # Phase 2: Principled Negotiation (OANP)
     negotiation_results = await negotiate_bids_oanp(
         task=request.description,
@@ -984,9 +995,13 @@ async def _run_elite_loop_bg(request: TaskRequest):
         "winner": winner_name,
         "score": winner_score,
         "fee": bool(fee_tx_id),
+        "fee_amount": str(platform_fee) if fee_tx_id else None,
         "bonus": bool(bonus_tx_id),
+        "bonus_amount": str(quality_bonus) if bonus_tx_id else None,
         "slash": bool(slash_tx_id),
+        "slash_amount": str(slash_amount) if slash_tx_id else None,
         "credential": bool(credential_tx_id),
+        "credential_tx": str(credential_tx_id) if credential_tx_id else None,
         "amount": winner["bid_usdc"],
         "timestamp": datetime.now().isoformat()
     })
