@@ -17,6 +17,10 @@ export interface Transaction {
   amount: number;
   tx_hash: string;
   created_at: string;
+  fee_tx_id?: string;
+  bonus_tx_id?: string;
+  slash_tx_id?: string;
+  credential_tx_id?: string;
 }
 
 export interface OrchestratorAnalysis {

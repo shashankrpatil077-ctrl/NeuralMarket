@@ -1,6 +1,8 @@
 import os
+import asyncio
 import aiosqlite
 import asyncpg
+from typing import Any, Optional
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -31,8 +33,53 @@ def _asyncpg_connect_kwargs() -> dict:
     return {}
 
 
-async def _pg_connect():
-    return await asyncpg.connect(DATABASE_URL, **_asyncpg_connect_kwargs())
+def _asyncpg_pool_kwargs() -> dict:
+    """Pool settings for Railway/Neon: avoid stale conns and PgBouncer statement cache issues."""
+    kw = dict(_asyncpg_connect_kwargs())
+    kw["statement_cache_size"] = 0
+    return kw
+
+
+_pg_pool: Optional[Any] = None
+
+
+async def _get_pg_pool() -> Any:
+    global _pg_pool
+    if _pg_pool is None:
+        if not DATABASE_URL:
+            raise RuntimeError("DATABASE_URL not set")
+        _pg_pool = await asyncpg.create_pool(
+            DATABASE_URL,
+            min_size=1,
+            max_size=10,
+            max_inactive_connection_lifetime=120.0,
+            command_timeout=120,
+            **_asyncpg_pool_kwargs(),
+        )
+    return _pg_pool
+
+
+async def close_pool():
+    global _pg_pool
+    if _pg_pool is not None:
+        await _pg_pool.close()
+        _pg_pool = None
+
+
+async def _pg_run(op):
+    """Run ``op(conn)`` with a pooled connection; retry if the server dropped an idle connection."""
+    last: Optional[BaseException] = None
+    for attempt in range(3):
+        try:
+            pool = await _get_pg_pool()
+            async with pool.acquire() as conn:
+                return await op(conn)
+        except (asyncpg.ConnectionDoesNotExistError, asyncpg.InterfaceError, OSError) as e:
+            last = e
+            await close_pool()
+            await asyncio.sleep(0.15 * (attempt + 1))
+    assert last is not None
+    raise last
 
 
 async def _init_sqlite():
@@ -71,66 +118,69 @@ async def _init_sqlite():
 async def init_db():
     if DATABASE_URL:
         try:
-            conn = await _pg_connect()
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS transactions (
-                    id SERIAL PRIMARY KEY,
-                    task TEXT,
-                    category TEXT,
-                    complexity TEXT,
-                    winner TEXT,
-                    amount_usdc REAL,
-                    quality_score INTEGER,
-                    tx_id TEXT,
-                    fee_tx_id TEXT,
-                    bonus_tx_id TEXT,
-                    slash_tx_id TEXT,
-                    credential_tx_id TEXT,
-                    on_chain_txns INTEGER,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS agent_reputations (
-                    agent TEXT PRIMARY KEY,
-                    reputation INTEGER DEFAULT 100,
-                    total_tasks INTEGER DEFAULT 0,
-                    total_earned REAL DEFAULT 0.0,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            await conn.close()
+            await close_pool()
+            pool = await _get_pg_pool()
+            async with pool.acquire() as conn:
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS transactions (
+                        id SERIAL PRIMARY KEY,
+                        task TEXT,
+                        category TEXT,
+                        complexity TEXT,
+                        winner TEXT,
+                        amount_usdc REAL,
+                        quality_score INTEGER,
+                        tx_id TEXT,
+                        fee_tx_id TEXT,
+                        bonus_tx_id TEXT,
+                        slash_tx_id TEXT,
+                        credential_tx_id TEXT,
+                        on_chain_txns INTEGER,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS agent_reputations (
+                        agent TEXT PRIMARY KEY,
+                        reputation INTEGER DEFAULT 100,
+                        total_tasks INTEGER DEFAULT 0,
+                        total_earned REAL DEFAULT 0.0,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
             print("✅ Database initialized (PostgreSQL)")
         except Exception as e:
             print(f"⚠️ PostgreSQL connection failed: {e}")
             print("⚠️ Falling back to SQLite")
+            await close_pool()
             await _init_sqlite()
     else:
         await _init_sqlite()
 
 async def log_transaction(entry: dict):
     if DATABASE_URL:
-        conn = await _pg_connect()
-        await conn.execute("""
-            INSERT INTO transactions 
-            (task, category, complexity, winner, amount_usdc, quality_score, 
-             tx_id, fee_tx_id, bonus_tx_id, slash_tx_id, credential_tx_id, on_chain_txns)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-        """, 
-            entry.get("task", ""),
-            entry.get("category", ""),
-            entry.get("complexity", ""),
-            entry.get("winner", ""),
-            entry.get("amount_usdc", 0.0),
-            entry.get("quality_score", 0),
-            entry.get("tx_id", ""),
-            entry.get("fee_tx_id"),
-            entry.get("bonus_tx_id"),
-            entry.get("slash_tx_id"),
-            entry.get("credential_tx_id"),
-            entry.get("on_chain_txns", 0)
-        )
-        await conn.close()
+        async def op(conn):
+            await conn.execute("""
+                INSERT INTO transactions 
+                (task, category, complexity, winner, amount_usdc, quality_score, 
+                 tx_id, fee_tx_id, bonus_tx_id, slash_tx_id, credential_tx_id, on_chain_txns)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            """,
+                entry.get("task", ""),
+                entry.get("category") or entry.get("primary_capability", ""),
+                entry.get("complexity", ""),
+                entry.get("winner", ""),
+                entry.get("amount_usdc", 0.0),
+                entry.get("quality_score", 0),
+                entry.get("tx_id", ""),
+                entry.get("fee_tx_id"),
+                entry.get("bonus_tx_id"),
+                entry.get("slash_tx_id"),
+                entry.get("credential_tx_id"),
+                entry.get("on_chain_txns", 0)
+            )
+
+        await _pg_run(op)
     else:
         async with aiosqlite.connect("neuralmarket.db") as db:
             await db.execute("""
@@ -156,10 +206,11 @@ async def log_transaction(entry: dict):
 
 async def get_all_transactions():
     if DATABASE_URL:
-        conn = await _pg_connect()
-        rows = await conn.fetch("SELECT * FROM transactions ORDER BY created_at DESC")
-        await conn.close()
-        return [dict(row) for row in rows]
+        async def op(conn):
+            rows = await conn.fetch("SELECT * FROM transactions ORDER BY created_at DESC")
+            return [dict(row) for row in rows]
+
+        return await _pg_run(op)
     else:
         async with aiosqlite.connect("neuralmarket.db") as db:
             db.row_factory = aiosqlite.Row
@@ -169,10 +220,10 @@ async def get_all_transactions():
 
 async def get_transaction_count():
     if DATABASE_URL:
-        conn = await _pg_connect()
-        count = await conn.fetchval("SELECT COUNT(*) FROM transactions")
-        await conn.close()
-        return count
+        async def op(conn):
+            return await conn.fetchval("SELECT COUNT(*) FROM transactions")
+
+        return await _pg_run(op)
     else:
         async with aiosqlite.connect("neuralmarket.db") as db:
             async with db.execute("SELECT COUNT(*) FROM transactions") as cursor:
@@ -181,17 +232,18 @@ async def get_transaction_count():
 
 async def update_agent_reputation(agent_name: str, reputation: int, earned_usdc: float = 0.0):
     if DATABASE_URL:
-        conn = await _pg_connect()
-        await conn.execute("""
-            INSERT INTO agent_reputations (agent, reputation, total_tasks, total_earned)
-            VALUES ($1, $2, 1, $3)
-            ON CONFLICT (agent) DO UPDATE SET
-                reputation = $2,
-                total_tasks = agent_reputations.total_tasks + 1,
-                total_earned = agent_reputations.total_earned + $3,
-                updated_at = CURRENT_TIMESTAMP
-        """, agent_name, reputation, earned_usdc)
-        await conn.close()
+        async def op(conn):
+            await conn.execute("""
+                INSERT INTO agent_reputations (agent, reputation, total_tasks, total_earned)
+                VALUES ($1, $2, 1, $3)
+                ON CONFLICT (agent) DO UPDATE SET
+                    reputation = $2,
+                    total_tasks = agent_reputations.total_tasks + 1,
+                    total_earned = agent_reputations.total_earned + $3,
+                    updated_at = CURRENT_TIMESTAMP
+            """, agent_name, reputation, earned_usdc)
+
+        await _pg_run(op)
     else:
         async with aiosqlite.connect("neuralmarket.db") as db:
             await db.execute("""

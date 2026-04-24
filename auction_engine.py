@@ -9,6 +9,7 @@ import json
 import re
 import random
 import asyncio
+import functools
 import aiohttp
 import hashlib
 import hmac
@@ -37,6 +38,11 @@ aiml_client = OpenAI(
     api_key=os.getenv("AIML_API_KEY"),
     base_url="https://api.aimlapi.com/v1"
 )
+
+
+async def aiml_chat(**kwargs):
+    """Run the sync OpenAI client in a worker thread so the event loop can flush SSE and I/O."""
+    return await asyncio.to_thread(functools.partial(aiml_client.chat.completions.create, **kwargs))
 
 ORCHESTRATOR_MODEL = "google/gemini-3-1-pro-preview"
 AGENT_NEGOTIATION_MODEL = "google/gemini-2.0-flash"
@@ -146,6 +152,11 @@ async def startup_event():
     print("✅ Database initialized. Economic forecaster and curriculum agent started.")
 
 
+@app.on_event("shutdown")
+async def shutdown_event():
+    await database.close_pool()
+
+
 # ==========================================
 # AUTONOMOUS ECONOMIC PARAMETERS (LLM-Determined)
 # ==========================================
@@ -164,7 +175,7 @@ Consider:
 
 Output ONLY a JSON object: {{"fee_usdc": 0.0001, "reasoning": "Brief explanation"}}
 """
-    resp = aiml_client.chat.completions.create(
+    resp = await aiml_chat(
         model=ECONOMIST_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
@@ -203,7 +214,7 @@ Exceptional work (score > 90) deserves a bonus. Suggest an amount between 10% an
 
 Output ONLY JSON: {{"bonus_usdc": 0.0005, "reasoning": "..."}}
 """
-    resp = aiml_client.chat.completions.create(
+    resp = await aiml_chat(
         model=ECONOMIST_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
@@ -230,7 +241,7 @@ Poor work (score < 60) requires a penalty. Determine:
 
 Output ONLY JSON: {{"slash_usdc": 0.0005, "reputation_penalty": 5, "reasoning": "..."}}
 """
-    resp = aiml_client.chat.completions.create(
+    resp = await aiml_chat(
         model=ECONOMIST_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
@@ -257,7 +268,7 @@ Determine appropriate quality thresholds for this specific task:
 
 Output JSON: {{"bonus_threshold": 90, "slash_threshold": 60, "credential_threshold": 80, "reasoning": "..."}}
 """
-    resp = aiml_client.chat.completions.create(
+    resp = await aiml_chat(
         model=ECONOMIST_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
@@ -278,7 +289,7 @@ Base Price: ${base_price:.6f}
 How many negotiation rounds (1-5) are appropriate given task complexity and value?
 Output JSON: {{"rounds": 3, "reasoning": "..."}}
 """
-    resp = aiml_client.chat.completions.create(
+    resp = await aiml_chat(
         model=AGENT_NEGOTIATION_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
@@ -302,7 +313,7 @@ async def generate_formal_specification(action: str, parameters: Dict[str, Any])
     
     Output a single string containing the formal specification.
     """
-    resp = aiml_client.chat.completions.create(
+    resp = await aiml_chat(
         model=VALIDATOR_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
@@ -321,7 +332,7 @@ async def adversarial_debate(task: str, output: str, agent_name: str) -> Tuple[b
     
     Be brutally honest. List all issues.
     """
-    red_resp = aiml_client.chat.completions.create(
+    red_resp = await aiml_chat(
         model=RED_TEAM_MODEL,
         messages=[{"role": "user", "content": red_prompt}],
         temperature=0.6,
@@ -335,7 +346,7 @@ async def adversarial_debate(task: str, output: str, agent_name: str) -> Tuple[b
     
     Provide a robust defense, acknowledging valid points but refuting unfair criticism.
     """
-    blue_resp = aiml_client.chat.completions.create(
+    blue_resp = await aiml_chat(
         model=BLUE_TEAM_MODEL,
         messages=[{"role": "user", "content": blue_prompt}],
         temperature=0.5,
@@ -351,7 +362,7 @@ async def adversarial_debate(task: str, output: str, agent_name: str) -> Tuple[b
     
     Output JSON: {{"accepted": true/false, "reasoning": "...", "robustness_score": 85}}
     """
-    judge_resp = aiml_client.chat.completions.create(
+    judge_resp = await aiml_chat(
         model=JUDGE_MODEL,
         messages=[{"role": "user", "content": judge_prompt}],
         temperature=0.3,
@@ -385,9 +396,9 @@ async def aivv_council_validate(task: str, outputs: List[Dict], bids: List[Dict]
         Submissions: {json.dumps(agents_summary)}
         Output JSON: {{"scores": {{"AGENT_NAME": 85, ...}}, "analysis": "..."}}
         """
-        resp = await asyncio.to_thread(lambda: aiml_client.chat.completions.create(
+        resp = await aiml_chat(
             model=VALIDATOR_MODEL, messages=[{"role": "user", "content": prompt}], temperature=0.3
-        ))
+        )
         return parse_llm_json(resp.choices[0].message.content)
     
     async def security_auditor():
@@ -396,9 +407,9 @@ async def aivv_council_validate(task: str, outputs: List[Dict], bids: List[Dict]
         Submissions: {json.dumps(agents_summary)}
         Output JSON: {{"flags": {{"AGENT_NAME": ["issue1", ...]}}, "safe": {{"AGENT_NAME": true/false}}}}
         """
-        resp = await asyncio.to_thread(lambda: aiml_client.chat.completions.create(
+        resp = await aiml_chat(
             model=VALIDATOR_MODEL, messages=[{"role": "user", "content": prompt}], temperature=0.3
-        ))
+        )
         return parse_llm_json(resp.choices[0].message.content)
     
     async def economic_auditor():
@@ -407,9 +418,9 @@ async def aivv_council_validate(task: str, outputs: List[Dict], bids: List[Dict]
         Submissions: {json.dumps(agents_summary)}
         Output JSON: {{"fair_pricing": {{"AGENT_NAME": true/false}}, "value_scores": {{"AGENT_NAME": 90}}}}
         """
-        resp = await asyncio.to_thread(lambda: aiml_client.chat.completions.create(
+        resp = await aiml_chat(
             model=VALIDATOR_MODEL, messages=[{"role": "user", "content": prompt}], temperature=0.3
-        ))
+        )
         return parse_llm_json(resp.choices[0].message.content)
     
     accuracy, security, economic = await asyncio.gather(
@@ -453,6 +464,14 @@ async def negotiate_bids_oanp(task: str, base_price: float, max_rounds: int = 3)
     agent_interests = {}
     final_status = {name: False for name in AGENTS}
 
+    await sse_queue.put({
+        "event": "negotiation_start",
+        "task": task,
+        "base_price": base_price,
+        "timestamp": datetime.now().isoformat()
+    })
+    await asyncio.sleep(0)
+
     # --- Autonomous Initial Bidding Phase ---
     for name, agent in AGENTS.items():
         prompt = f"""
@@ -474,7 +493,7 @@ Respond ONLY with a JSON object:
     "reasoning": "Brief justification for your bid"
 }}
 """
-        resp = aiml_client.chat.completions.create(
+        resp = await aiml_chat(
             model=AGENT_NEGOTIATION_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
@@ -491,13 +510,16 @@ Respond ONLY with a JSON object:
         current_bids[name] = round(proposed_bid, 6)
         initial_reasoning[name] = reasoning
         print(f"  💰 {name} initial bid: ${current_bids[name]:.6f}")
-    
-    await sse_queue.put({
-        "event": "negotiation_start",
-        "task": task,
-        "base_price": base_price,
-        "timestamp": datetime.now().isoformat()
-    })
+        await sse_queue.put({
+            "event": "agent_speak",
+            "round": 0,
+            "agent": name,
+            "message": reasoning,
+            "bid": current_bids[name],
+            "phase": "initial_bid",
+            "timestamp": datetime.now().isoformat()
+        })
+        await asyncio.sleep(0)
     
     for round_num in range(1, max_rounds + 1):
         print(f"\n--- Principled Negotiation Round {round_num} ---")
@@ -532,7 +554,7 @@ Respond ONLY with a JSON object:
             }}
             """
             
-            resp = aiml_client.chat.completions.create(
+            resp = await aiml_chat(
                 model=AGENT_NEGOTIATION_MODEL,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7,
@@ -622,7 +644,7 @@ async def refine_system_prompt(agent_name: str, agent: Dict):
     Write a new, improved system prompt for yourself that will help you perform better.
     Output only the new system prompt as a single string.
     """
-    resp = aiml_client.chat.completions.create(
+    resp = await aiml_chat(
         model=AGENT_NEGOTIATION_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.4,
@@ -651,7 +673,7 @@ async def curriculum_learning_background():
                 
                 Output JSON with an array of tasks: {{"tasks": ["task1", "task2", "task3"]}}
                 """
-                resp = aiml_client.chat.completions.create(
+                resp = await aiml_chat(
                     model=CURRICULUM_MODEL,
                     messages=[{"role": "user", "content": curriculum_prompt}],
                     temperature=0.8,
@@ -689,7 +711,7 @@ async def economic_forecaster():
                 
                 Output JSON: {{"predicted_demand": "low/medium/high", "recommended_base_price": 0.0015, "reasoning": "..."}}
                 """
-                resp = aiml_client.chat.completions.create(
+                resp = await aiml_chat(
                     model=ECONOMIST_MODEL,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.3,
@@ -736,7 +758,7 @@ async def _run_elite_loop_bg(request: TaskRequest):
     base_price_hint = float(economic_forecast.get("recommended_base_price", 0.0015) or 0.0015)
     bank_data: Dict[str, Any] = {}
     try:
-        resp = aiml_client.chat.completions.create(
+        resp = await aiml_chat(
             model=ORCHESTRATOR_MODEL,
             messages=[
                 {"role": "system", "content": "You are the NeuralMarket Chief Economist. Respond ONLY with valid JSON."},
@@ -902,6 +924,10 @@ async def _run_elite_loop_bg(request: TaskRequest):
     })
     
     # Phase 6: Payment & Economic Mechanics
+    platform_fee = 0.0
+    quality_bonus = 0.0
+    slash_amount = 0.0
+
     tx_id = transfer_usdc(
         source_wallet_id=orchestrator_id,
         destination_address=winner["address"],
@@ -913,7 +939,7 @@ async def _run_elite_loop_bg(request: TaskRequest):
     fee_tx_id = None
     if winner["wallet_id"] and treasury_address:
         try:
-            platform_fee = await determine_platform_fee(request.description, winner["bid_usdc"], winner_score)
+            platform_fee = float(await determine_platform_fee(request.description, winner["bid_usdc"], winner_score))
             fee_tx_id = transfer_usdc(
                 source_wallet_id=winner["wallet_id"],
                 destination_address=treasury_address,
@@ -929,7 +955,7 @@ async def _run_elite_loop_bg(request: TaskRequest):
     bonus_tx_id = None
     if winner_score > 90:
         try:
-            quality_bonus = await determine_quality_bonus(request.description, winner["bid_usdc"], winner_score)
+            quality_bonus = float(await determine_quality_bonus(request.description, winner["bid_usdc"], winner_score))
             bonus_tx_id = transfer_usdc(
                 source_wallet_id=orchestrator_id,
                 destination_address=winner["address"],
@@ -945,6 +971,7 @@ async def _run_elite_loop_bg(request: TaskRequest):
     slash_tx_id = None
     if winner_score < 60:
         slash_amount, rep_penalty = await determine_slash_penalty(request.description, winner["bid_usdc"], winner_score)
+        slash_amount = float(slash_amount)
         try:
             slash_tx_id = transfer_usdc(
                 source_wallet_id=winner["wallet_id"],
