@@ -189,3 +189,14 @@ body {
   background: rgba(167, 139, 250, 0.2);
   color: var(--color-text-primary);
 }
+
+/* ── Tables: global * reset removes cell padding; restore for data tables ── */
+#root table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+#root table th,
+#root table td {
+  box-sizing: border-box;
+}
