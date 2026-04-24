@@ -4,7 +4,36 @@ import asyncpg
 from dotenv import load_dotenv
 
 load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
+_raw_db_url = os.getenv("DATABASE_URL")
+
+
+def _normalize_database_url(url: str) -> str:
+    """asyncpg expects postgresql:// not postgres:// (common on Railway/Heroku)."""
+    if not url:
+        return url
+    if url.startswith("postgres://"):
+        return "postgresql://" + url[len("postgres://") :]
+    return url
+
+
+DATABASE_URL = _normalize_database_url(_raw_db_url) if _raw_db_url else None
+
+
+def _asyncpg_connect_kwargs() -> dict:
+    """Neon and many cloud Postgres URLs require TLS; asyncpg needs ssl=True explicitly."""
+    if not DATABASE_URL:
+        return {}
+    if os.getenv("DATABASE_SSL", "").strip().lower() in ("0", "false", "disable"):
+        return {}
+    u = DATABASE_URL.lower()
+    if "neon.tech" in u or "sslmode=require" in u or os.getenv("DATABASE_SSL", "").strip().lower() in ("1", "true", "require"):
+        return {"ssl": True}
+    return {}
+
+
+async def _pg_connect():
+    return await asyncpg.connect(DATABASE_URL, **_asyncpg_connect_kwargs())
+
 
 async def _init_sqlite():
     """Initialize local SQLite database."""
@@ -42,7 +71,7 @@ async def _init_sqlite():
 async def init_db():
     if DATABASE_URL:
         try:
-            conn = await asyncpg.connect(DATABASE_URL)
+            conn = await _pg_connect()
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS transactions (
                     id SERIAL PRIMARY KEY,
@@ -81,7 +110,7 @@ async def init_db():
 
 async def log_transaction(entry: dict):
     if DATABASE_URL:
-        conn = await asyncpg.connect(DATABASE_URL)
+        conn = await _pg_connect()
         await conn.execute("""
             INSERT INTO transactions 
             (task, category, complexity, winner, amount_usdc, quality_score, 
@@ -127,7 +156,7 @@ async def log_transaction(entry: dict):
 
 async def get_all_transactions():
     if DATABASE_URL:
-        conn = await asyncpg.connect(DATABASE_URL)
+        conn = await _pg_connect()
         rows = await conn.fetch("SELECT * FROM transactions ORDER BY created_at DESC")
         await conn.close()
         return [dict(row) for row in rows]
@@ -140,7 +169,7 @@ async def get_all_transactions():
 
 async def get_transaction_count():
     if DATABASE_URL:
-        conn = await asyncpg.connect(DATABASE_URL)
+        conn = await _pg_connect()
         count = await conn.fetchval("SELECT COUNT(*) FROM transactions")
         await conn.close()
         return count
@@ -152,7 +181,7 @@ async def get_transaction_count():
 
 async def update_agent_reputation(agent_name: str, reputation: int, earned_usdc: float = 0.0):
     if DATABASE_URL:
-        conn = await asyncpg.connect(DATABASE_URL)
+        conn = await _pg_connect()
         await conn.execute("""
             INSERT INTO agent_reputations (agent, reputation, total_tasks, total_earned)
             VALUES ($1, $2, 1, $3)
