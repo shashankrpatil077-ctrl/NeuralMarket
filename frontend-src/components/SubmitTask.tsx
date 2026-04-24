@@ -14,6 +14,8 @@ export function SubmitTask({ onSubmit, isSubmitting }: Props) {
     e.preventDefault();
     if (!description.trim() || isSubmitting) return;
     onSubmit(description.trim(), budget);
+    setDescription('');
+    setBudget(0.005);
   };
 
   return (
