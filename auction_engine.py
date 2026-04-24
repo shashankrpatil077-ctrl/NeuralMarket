@@ -15,7 +15,9 @@ import hmac
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from pathlib import Path
+
+from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -46,11 +48,13 @@ ECONOMIST_MODEL = "google/gemini-3-1-pro-preview"
 CURRICULUM_MODEL = "google/gemini-2.0-flash"
 
 app = FastAPI(title="NeuralMarket - Mission-Critical Autonomous Economy on Arc")
+_APP_ROOT = Path(__file__).resolve().parent
 
+_cors = os.getenv("CORS_ORIGINS", "").strip()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://tiny-morning-fb2c.shashankrpatil077.workers.dev","*"],
+    allow_origins=_cors.split(",") if _cors else ["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -166,7 +170,7 @@ Output ONLY a JSON object: {{"fee_usdc": 0.0001, "reasoning": "Brief explanation
         temperature=0.3,
     )
     try:
-        data = local_parse_json(resp.choices[0].message.content)
+        data = parse_llm_json(resp.choices[0].message.content)
         fee = float(data.get("fee_usdc", 0.0001))
         return max(0.00005, min(fee, winning_bid * 0.15))
     except Exception:
@@ -205,7 +209,7 @@ Output ONLY JSON: {{"bonus_usdc": 0.0005, "reasoning": "..."}}
         temperature=0.3,
     )
     try:
-        data = local_parse_json(resp.choices[0].message.content)
+        data = parse_llm_json(resp.choices[0].message.content)
         bonus = float(data.get("bonus_usdc", 0.0005))
         return max(0.0001, min(bonus, winning_bid * 0.5))
     except Exception:
@@ -232,7 +236,7 @@ Output ONLY JSON: {{"slash_usdc": 0.0005, "reputation_penalty": 5, "reasoning": 
         temperature=0.3,
     )
     try:
-        data = local_parse_json(resp.choices[0].message.content)
+        data = parse_llm_json(resp.choices[0].message.content)
         slash = float(data.get("slash_usdc", winning_bid * 0.3))
         rep_penalty = int(data.get("reputation_penalty", 5))
         return max(0.00005, min(slash, winning_bid * 0.7)), rep_penalty
@@ -259,7 +263,7 @@ Output JSON: {{"bonus_threshold": 90, "slash_threshold": 60, "credential_thresho
         temperature=0.3,
     )
     try:
-        data = local_parse_json(resp.choices[0].message.content)
+        data = parse_llm_json(resp.choices[0].message.content)
         return data
     except Exception:
         return {"bonus_threshold": 90, "slash_threshold": 60, "credential_threshold": 80}
@@ -280,7 +284,7 @@ Output JSON: {{"rounds": 3, "reasoning": "..."}}
         temperature=0.3,
     )
     try:
-        data = local_parse_json(resp.choices[0].message.content)
+        data = parse_llm_json(resp.choices[0].message.content)
         return max(1, min(int(data.get("rounds", 3)), 5))
     except Exception:
         return 3
@@ -476,7 +480,7 @@ Respond ONLY with a JSON object:
             temperature=0.7,
         )
         try:
-            data = local_parse_json(resp.choices[0].message.content)
+            data = parse_llm_json(resp.choices[0].message.content)
             proposed_bid = float(data.get("proposed_bid", base_price))
             proposed_bid = max(0.0001, min(proposed_bid, base_price * 2))
             reasoning = data.get("reasoning", "No reasoning provided")
@@ -535,7 +539,7 @@ Respond ONLY with a JSON object:
             )
             
             try:
-                data = local_parse_json(resp.choices[0].message.content)
+                data = parse_llm_json(resp.choices[0].message.content)
                 interests = data.get("interests", "")
                 batna = data.get("batna", "")
                 message = data.get("message", f"I bid {current_bids[name]:.6f} USDC")
@@ -627,17 +631,6 @@ async def refine_system_prompt(agent_name: str, agent: Dict):
     print(f"📈 Agent {agent_name} refined system prompt via curriculum learning.")
 
 async def curriculum_learning_background():
-    def local_parse_json(text):
-        try:
-            import json
-            text = text.strip().replace("```json", "").replace("```", "").strip()
-            start, end = text.find("{"), text.rfind("}") + 1
-            if start != -1 and end > start:
-                text = text[start:end]
-            return json.loads(text)
-        except:
-            return {}
-
     while True:
         try:
             past = await database.get_all_transactions()
@@ -664,7 +657,7 @@ async def curriculum_learning_background():
                     temperature=0.8,
                 )
                 try:
-                    data = local_parse_json(resp.choices[0].message.content)
+                    data = parse_llm_json(resp.choices[0].message.content)
                     tasks = data.get("tasks", [])
                     for task in tasks[:2]:
                         if not isinstance(task, str):
@@ -683,17 +676,6 @@ async def curriculum_learning_background():
 # Autonomous Economic Forecaster
 # ==========================================
 async def economic_forecaster():
-    def local_parse_json(text):
-        try:
-            import json
-            text = text.strip().replace("```json", "").replace("```", "").strip()
-            start, end = text.find("{"), text.rfind("}") + 1
-            if start != -1 and end > start:
-                text = text[start:end]
-            return json.loads(text)
-        except:
-            return {}
-
     global economic_forecast, last_forecast_time
     while True:
         try:
@@ -712,7 +694,7 @@ async def economic_forecaster():
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.3,
                 )
-                economic_forecast = local_parse_json(resp.choices[0].message.content)
+                economic_forecast = parse_llm_json(resp.choices[0].message.content)
                 last_forecast_time = datetime.now()
                 print(f"📊 Economic forecast updated: {economic_forecast}")
         except Exception as e:
@@ -735,6 +717,10 @@ def issue_erc8004_credential(agent_address: str, score: int) -> str:
 # ==========================================
 @app.post("/run_elite_loop")
 async def run_elite_loop(request: TaskRequest):
+    asyncio.create_task(_run_elite_loop_bg(request))
+    return {"status": "accepted", "message": "Task queued — watch the live stream for results"}
+
+async def _run_elite_loop_bg(request: TaskRequest):
     orchestrator_id = os.getenv("ORCHESTRATOR_WALLET_ID")
     treasury_address = os.getenv("TREASURY_ADDRESS")
     
@@ -747,8 +733,9 @@ async def run_elite_loop(request: TaskRequest):
     
     # Phase 1: Orchestrator Analysis (Upgraded Autonomous)
     # ----------------------------------------------------------
+    base_price_hint = float(economic_forecast.get("recommended_base_price", 0.0015) or 0.0015)
+    bank_data: Dict[str, Any] = {}
     try:
-        base_price_hint = economic_forecast.get("recommended_base_price", 0.0015)
         resp = aiml_client.chat.completions.create(
             model=ORCHESTRATOR_MODEL,
             messages=[
@@ -768,7 +755,7 @@ async def run_elite_loop(request: TaskRequest):
                 )},
             ],
         )
-        bank_data = parse_llm_json(resp.choices[0].message.content)
+        bank_data = parse_llm_json(resp.choices[0].message.content or "")
         bank_data["task_preview"] = request.description[:50]
         print(f"🧠 Orchestrator: {bank_data}")
     except Exception as e:
@@ -777,22 +764,22 @@ async def run_elite_loop(request: TaskRequest):
             "base_price": base_price_hint,
             "primary_capability": "writing",
             "complexity": "Low",
-            "task_preview": request.description[:50]
+            "task_preview": request.description[:50],
         }
-        bank_data = parse_llm_json(resp.choices[0].message.content)
-        bank_data["task_preview"] = request.description[:50]
-        print(f"🧠 Orchestrator: {bank_data}")
+    try:
+        bp = bank_data.get("base_price", base_price_hint)
+        bank_data["base_price"] = float(bp) if bp is not None else base_price_hint
+    except (TypeError, ValueError):
+        bank_data["base_price"] = base_price_hint
+    bank_data["base_price"] = max(0.0005, min(float(bank_data["base_price"]), 0.05))
+    if not bank_data.get("primary_capability"):
+        bank_data["primary_capability"] = "writing"
+    try:
         formal_spec = await generate_formal_specification("price_setting", bank_data)
         bank_data["formal_specification"] = formal_spec[:200]
     except Exception as e:
-        print(f"❌ Orchestrator error: {e}")
-        bank_data = {
-            "base_price": economic_forecast.get("recommended_base_price", 0.0015),
-            "primary_capability": "coding",
-            "complexity": "Low",
-            "task_preview": request.description[:50]
-        }
-    
+        print(f"⚠️ Formal specification skipped: {e}")
+
     # Phase 2: Principled Negotiation (OANP)
     negotiation_results = await negotiate_bids_oanp(
         task=request.description,
@@ -905,7 +892,6 @@ async def run_elite_loop(request: TaskRequest):
     )
     print(f"💸 Payment tx: {tx_id}")
     
-    fee_tx_id = None
     fee_tx_id = None
     if winner["wallet_id"] and treasury_address:
         try:
@@ -1026,7 +1012,9 @@ async def sse_endpoint():
     async def event_generator():
         while True:
             message = await sse_queue.get()
-            yield {"data": json.dumps(message)}
+            event_name = message.get("event") or "message"
+            payload = {k: v for k, v in message.items() if k != "event"}
+            yield {"event": event_name, "data": json.dumps(payload)}
     return EventSourceResponse(event_generator())
 
 @app.get("/transactions")
@@ -1050,6 +1038,14 @@ async def get_agents():
         }
         for name, agent in AGENTS.items()
     }
+
+@app.get("/")
+async def serve_index():
+    index_path = _APP_ROOT / "index.html"
+    if index_path.is_file():
+        return FileResponse(index_path)
+    return JSONResponse({"detail": "index.html not found"}, status_code=404)
+
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health():

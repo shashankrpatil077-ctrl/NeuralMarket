@@ -519,7 +519,7 @@ tailwind.config = {
         statusEl.appendChild(errSpan);
         return;
       }
-      if (result.status === 'success') {
+      if (result.status === 'success' || result.status === 'accepted') {
         statusEl.innerHTML = '<span class="text-green-400">✅ Task accepted!</span>';
         document.getElementById('auctionContent').innerHTML = '<div class="text-cyan-400 font-data-mono">Auction starting...</div>';
         if (result.phase_3_all_outputs) {
