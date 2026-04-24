@@ -821,6 +821,13 @@ async def _run_elite_loop_bg(request: TaskRequest):
                     prompt=f"Task: {request.description}\n{agent.get('system_prompt', 'Be concise and helpful.')}"
                 )
                 agent_results.append(result)
+                await sse_queue.put({
+                    "event": "agent_complete",
+                    "agent": name,
+                    "output": result.get("output", "")[:300],
+                    "status": result.get("status", "failed"),
+                    "timestamp": datetime.now().isoformat()
+                })
                 if result.get("status") == "success":
                     print(f"✅ {name} responded successfully")
                     AGENTS[name]["successful_tasks"] += 1
@@ -972,6 +979,17 @@ async def _run_elite_loop_bg(request: TaskRequest):
         earned_usdc=winner["bid_usdc"]
     )
     
+    await sse_queue.put({
+        "event": "settlement_complete",
+        "winner": winner_name,
+        "score": winner_score,
+        "fee": bool(fee_tx_id),
+        "bonus": bool(bonus_tx_id),
+        "slash": bool(slash_tx_id),
+        "credential": bool(credential_tx_id),
+        "amount": winner["bid_usdc"],
+        "timestamp": datetime.now().isoformat()
+    })
     await sse_queue.put({
         "event": "task_complete",
         "winner": winner_name,
