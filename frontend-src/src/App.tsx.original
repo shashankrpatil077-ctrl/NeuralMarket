@@ -1,0 +1,141 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { Navbar } from './components/Navbar';
+import { Welcome } from './components/Welcome';
+import { SubmitTask } from './components/SubmitTask';
+import { LiveAuction } from './components/LiveAuction';
+import { OrchestratorAnalysis } from './components/OrchestratorAnalysis';
+import { AgentWorkspace } from './components/AgentWorkspace';
+import { ValidationVerdict } from './components/ValidationVerdict';
+import { Settlement } from './components/Settlement';
+import { TransactionHistory } from './components/TransactionHistory';
+import { Toast } from './components/Toast';
+import { fetchTransactions, fetchAgents, submitTask, createSSEConnection } from './api';
+import type { EliteLoopResponse, Transaction, Agent } from './types';
+
+function App() {
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [eliteResult, setEliteResult] = useState<EliteLoopResponse | null>(null);
+  const [auctionMessages, setAuctionMessages] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const sseRef = useRef<EventSource | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 4000);
+  }, []);
+
+  // Fetch initial data
+  useEffect(() => {
+    fetchTransactions().then(setTransactions).catch(() => showToast('Failed to load transactions'));
+    fetchAgents().then(setAgents).catch(() => showToast('Failed to load agents'));
+  }, [showToast]);
+
+  // Polling
+  useEffect(() => {
+    const txInterval = setInterval(() => {
+      fetchTransactions().then(setTransactions).catch(() => {});
+    }, 15000);
+    const agentInterval = setInterval(() => {
+      fetchAgents().then(setAgents).catch(() => {});
+    }, 30000);
+    return () => { clearInterval(txInterval); clearInterval(agentInterval); };
+  }, []);
+
+  // SSE
+  useEffect(() => {
+    sseRef.current = createSSEConnection(
+      (type, data) => {
+        let msg = '';
+        switch (type) {
+          case 'negotiation_start':
+            msg = 'Negotiation started...';
+            break;
+          case 'agent_speak':
+            msg = `[${data.agent || 'Agent'}]: ${data.message || ''} ($${data.bid || '—'})`;
+            break;
+          case 'validation_complete':
+            msg = `Winner: ${data.winner || 'TBD'} — Validation complete`;
+            break;
+          case 'task_complete':
+            msg = 'Task complete.';
+            break;
+          default:
+            msg = data.data || JSON.stringify(data);
+        }
+        setAuctionMessages(prev => [...prev, msg]);
+      },
+      () => showToast('Connection interrupted — retrying...')
+    );
+    return () => sseRef.current?.close();
+  }, [showToast]);
+
+  const handleSubmit = useCallback(async (description: string, maxBudget: number) => {
+    setIsSubmitting(true);
+    try {
+      const result = await submitTask(description, maxBudget);
+      setEliteResult(result);
+      fetchTransactions().then(setTransactions).catch(() => {});
+    } catch {
+      showToast('Task submission failed — please retry');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [showToast]);
+
+  const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
+
+  return (
+    <div className="grain min-h-screen" style={{ background: '#121212' }}>
+      <Navbar />
+
+      <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ duration: 0.6 }}>
+        <section id="welcome"><Welcome agentCount={agents.length} /></section>
+      </motion.div>
+
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={fadeUp} transition={{ duration: 0.6 }}>
+        <section id="submit" style={{ paddingTop: 80 }}><SubmitTask onSubmit={handleSubmit} isSubmitting={isSubmitting} /></section>
+      </motion.div>
+
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={fadeUp} transition={{ duration: 0.6 }}>
+        <section id="auction" style={{ paddingTop: 80 }}><LiveAuction messages={auctionMessages} /></section>
+      </motion.div>
+
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={fadeUp} transition={{ duration: 0.6 }}>
+        <section id="orchestrator" style={{ paddingTop: 80 }}>
+          <OrchestratorAnalysis data={eliteResult?.phase_1_analysis || null} />
+        </section>
+      </motion.div>
+
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={fadeUp} transition={{ duration: 0.6 }}>
+        <section id="workspace" style={{ paddingTop: 80 }}>
+          <AgentWorkspace outputs={eliteResult?.phase_3_all_outputs || []} />
+        </section>
+      </motion.div>
+
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={fadeUp} transition={{ duration: 0.6 }}>
+        <section id="verdict" style={{ paddingTop: 80 }}>
+          <ValidationVerdict data={eliteResult?.phase_4_council_validation || null} />
+        </section>
+      </motion.div>
+
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={fadeUp} transition={{ duration: 0.6 }}>
+        <section id="settlement" style={{ paddingTop: 80 }}>
+          <Settlement data={eliteResult?.phase_6_payments || null} />
+        </section>
+      </motion.div>
+
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={fadeUp} transition={{ duration: 0.6 }}>
+        <section id="history" style={{ paddingTop: 80, paddingBottom: 120 }}>
+          <TransactionHistory transactions={transactions} />
+        </section>
+      </motion.div>
+
+      {toast && <Toast message={toast} />}
+    </div>
+  );
+}
+
+export default App;

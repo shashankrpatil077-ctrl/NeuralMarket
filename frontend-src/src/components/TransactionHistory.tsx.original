@@ -1,0 +1,101 @@
+import { ExternalLink } from 'lucide-react';
+import type { Transaction } from '../types';
+
+interface Props {
+  transactions: Transaction[];
+}
+
+const scoreColors = ['#A78BFA', '#6EE7B7', '#F9A8D4', '#FBBF24', '#4ADE80'];
+
+export function TransactionHistory({ transactions }: Props) {
+  return (
+    <div style={{ maxWidth: 1240, margin: '0 auto' }} className="px-6 md:px-[80px]">
+      <p className="label" style={{ marginBottom: 32 }}>Transaction History</p>
+
+      <div
+        className="overflow-x-auto"
+        style={{
+          borderRadius: 14,
+          background: '#1A1A1A',
+          borderTop: '1px solid rgba(255,255,255,0.05)',
+        }}
+      >
+        <table style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              {['Task', 'Winner', 'Quality', 'Amount', 'TX ID', ''].map((h, i) => (
+                <th
+                  key={i}
+                  className="label"
+                  style={{
+                    textAlign: 'left',
+                    padding: '16px 20px',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    fontWeight: 500,
+                  }}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {transactions.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ padding: 32, textAlign: 'center', color: '#5A5A5A', fontSize: 14 }}>
+                  No transactions recorded yet
+                </td>
+              </tr>
+            ) : (
+              transactions.map((tx, i) => (
+                <tr
+                  key={tx.id || i}
+                  style={{
+                    background: i % 2 === 0 ? '#121212' : '#1A1A1A',
+                    transition: 'background 0.2s',
+                  }}
+                >
+                  <td style={{ padding: '14px 20px', color: '#E8E8E8', fontSize: 14, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {tx.task_description}
+                  </td>
+                  <td style={{ padding: '14px 20px', color: '#8A8A8A', fontSize: 14 }}>
+                    {tx.winner_agent}
+                  </td>
+                  <td style={{ padding: '14px 20px' }}>
+                    <span className="mono" style={{ color: scoreColors[i % scoreColors.length] }}>
+                      {tx.quality_score}
+                    </span>
+                  </td>
+                  <td style={{ padding: '14px 20px' }}>
+                    <span className="mono" style={{ color: '#E8E8E8' }}>
+                      ${tx.amount}
+                    </span>
+                  </td>
+                  <td style={{ padding: '14px 20px' }}>
+                    <span className="mono" style={{ color: '#5A5A5A', fontSize: 12 }}>
+                      {tx.tx_hash ? `${tx.tx_hash.slice(0, 10)}...` : '\u2014'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '14px 20px' }}>
+                    {tx.tx_hash && (
+                      <a
+                        href={`https://arcscan.io/tx/${tx.tx_hash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#5A5A5A', transition: 'color 0.3s' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = '#8A8A8A')}
+                        onMouseLeave={e => (e.currentTarget.style.color = '#5A5A5A')}
+                      >
+                        <ExternalLink size={14} />
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
