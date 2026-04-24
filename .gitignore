@@ -9,3 +9,6 @@ database.py.old
 __pycache__/
 *.broken
 *.backup_*
+__pycache__/
+*.broken
+*.backup_*
