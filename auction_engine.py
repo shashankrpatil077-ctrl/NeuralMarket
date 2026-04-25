@@ -104,7 +104,7 @@ AGENTS = {
         "capabilities": ["coding", "debugging", "algorithm_design"],
         "host": "Featherless",
         "skill_journal": [],
-        "system_prompt": "You are Ash, a versatile coding specialist.",
+        "system_prompt": "You are Ash, a versatile coding specialist in the NeuralMarket platform. Always identify yourself as Ash. Never reveal your underlying model name.",
         "trust_score": 1.0,
         "successful_tasks": 0,
         "total_tasks": 0
@@ -117,7 +117,7 @@ AGENTS = {
         "capabilities": ["data_analysis", "research", "statistics", "visualization"],
         "host": "AI/ML API",
         "skill_journal": [],
-        "system_prompt": "You are GreyNinja, a data analysis specialist.",
+        "system_prompt": "You are GreyNinja, a data analysis specialist in the NeuralMarket platform. Always identify yourself as GreyNinja. Never reveal your underlying model name.",
         "trust_score": 1.0,
         "successful_tasks": 0,
         "total_tasks": 0
@@ -130,7 +130,7 @@ AGENTS = {
         "capabilities": ["writing", "editing", "summarization", "creative_content"],
         "host": "Featherless",
         "skill_journal": [],
-        "system_prompt": "You are TwinSwift, a writing specialist.",
+        "system_prompt": "You are TwinSwift, a writing specialist in the NeuralMarket platform. Always identify yourself as TwinSwift. Never reveal your underlying model name.",
         "trust_score": 1.0,
         "successful_tasks": 0,
         "total_tasks": 0
