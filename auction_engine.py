@@ -988,6 +988,27 @@ async def _run_elite_loop_bg(request: TaskRequest):
     if winner_score > 80:
         credential_tx_id = issue_erc8004_credential(AGENTS[winner_name]["address"], winner_score)
     
+
+    # ── Phase 10: Settlement SSE (real numbers) ──────────────────────────
+    await sse_queue.put({
+        "event": "settlement_complete",
+        "winner": winner_name,
+        "amount": winner["bid_usdc"],
+        "fee": fee_tx_id,
+        "bonus": bonus_tx_id,
+        "slash": slash_tx_id,
+        "credential": credential_tx_id,
+        "fee_amount": platform_fee,           # actual numeric amount
+        "bonus_amount": quality_bonus if quality_score > 90 else 0,
+        "slash_amount": slash_amount if quality_score < 60 else 0,
+        "score": winner_score,
+        "quality_scores": quality_scores,
+        "credential_tx": credential_tx_id,
+        "platform_fee": "Collected" if fee_tx_id else "—",
+        "quality_bonus": "Awarded" if bonus_tx_id else "—",
+        "slash_penalty": "Applied" if slash_tx_id else "—",
+        "erc8004_credential": "Issued" if credential_tx_id else "—",
+    })
     txn_count = sum(1 for t in [tx_id, fee_tx_id, bonus_tx_id, slash_tx_id, credential_tx_id] if t)
     
     log_entry = {
