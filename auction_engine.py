@@ -25,7 +25,7 @@ from openai import OpenAI
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Tuple, Optional
 
-from payments.circle_client import transfer_usdc
+from payments.circle_client import transfer_usdc, wait_for_tx_hash
 from featherless_client import call_featherless, call_agent
 import database
 
@@ -1025,6 +1025,7 @@ async def _run_elite_loop_bg(request: TaskRequest):
         "slash_tx_id": slash_tx_id,
         "credential_tx_id": credential_tx_id,
         "on_chain_txns": txn_count,
+        "tx_hash": wait_for_tx_hash(tx_id) if tx_id else None,
         "explorer": f"https://testnet.arcscan.app/tx/{tx_id}" if tx_id else None,
         "validator_explanation": user_explanation,
         "formal_specification": bank_data.get("formal_specification", ""),

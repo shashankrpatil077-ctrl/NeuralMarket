@@ -147,3 +147,27 @@ def list_wallets() -> list:
         return wallets
     print(f"❌ list_wallets error [{r.status_code}]: {r.text}")
     return []
+
+def wait_for_tx_hash(tx_id: str, timeout: int = 30):
+    """Poll Circle until transaction is confirmed and return on-chain txHash."""
+    import time
+    from typing import Optional
+    
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            r = requests.get(f"{BASE_URL}/transactions/{tx_id}", headers=HEADERS)
+            if r.status_code == 200:
+                data = r.json().get("data", {})
+                tx_data = data.get("transaction", {}) or data
+                tx_hash = tx_data.get("txHash")
+                state = tx_data.get("state", "")
+                
+                if tx_hash and state == "COMPLETE":
+                    return tx_hash
+        except Exception as e:
+            print(f"Error polling for txHash: {e}")
+        
+        time.sleep(2)
+    
+    return None
