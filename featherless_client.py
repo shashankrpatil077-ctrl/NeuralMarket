@@ -14,6 +14,7 @@ async def call_featherless(
     agent_name:  str,
     model:       str,
     prompt:      str,
+    system:      str   = "",
     max_tokens:  int   = 512,
     temperature: float = 0.7,
     timeout:     int   = 90,
@@ -25,9 +26,14 @@ async def call_featherless(
         "Authorization": f"Bearer {FEATHERLESS_API_KEY}",
         "Content-Type":  "application/json",
     }
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
+
     payload = {
         "model":       model,
-        "messages":    [{"role": "user", "content": prompt}],
+        "messages":    messages,
         "max_tokens":  max_tokens,
         "temperature": temperature,
     }
@@ -82,7 +88,7 @@ async def call_agent(session, agent_name, agent, prompt):
     model  = agent["model"]
     system = agent.get("system_prompt", "You are a helpful AI agent.")
     if host == "Featherless":
-        result = await call_featherless(session, agent_name, model, prompt)
+        result = await call_featherless(session, agent_name, model, prompt, system=system)
     else:
         result = await call_aiml(agent_name, model, prompt, system)
     if result.get("status") == "failed" and agent.get("backup_model"):
@@ -90,7 +96,7 @@ async def call_agent(session, agent_name, agent, prompt):
         bh = agent.get("backup_host", "Featherless")
         print(f"⚠️  {agent_name} primary failed — retrying with backup {bm}...")
         if bh == "Featherless":
-            result = await call_featherless(session, agent_name, bm, prompt)
+            result = await call_featherless(session, agent_name, bm, prompt, system=system)
         else:
             result = await call_aiml(agent_name, bm, prompt, system)
         if result.get("status") == "success":
