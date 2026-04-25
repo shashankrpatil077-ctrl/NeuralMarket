@@ -1071,10 +1071,13 @@ from sse_starlette.sse import EventSourceResponse
 async def sse_endpoint():
     async def event_generator():
         while True:
-            message = await sse_queue.get()
-            event_name = message.get("event") or "message"
-            payload = {k: v for k, v in message.items() if k != "event"}
-            yield {"event": event_name, "data": json.dumps(payload)}
+            try:
+                message = await asyncio.wait_for(sse_queue.get(), timeout=15)
+                event_name = message.get("event") or "message"
+                payload = {k: v for k, v in message.items() if k != "event"}
+                yield {"event": event_name, "data": json.dumps(payload)}
+            except asyncio.TimeoutError:
+                yield {"event": "ping", "data": "{}"}
     return EventSourceResponse(event_generator())
 
 @app.get("/transactions")
