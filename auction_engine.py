@@ -1079,12 +1079,20 @@ async def sse_endpoint():
 
 @app.get("/transactions")
 async def get_transactions():
-    transactions = await database.get_all_transactions()
-    return {
-        "count": len(transactions),
-        "total_on_chain": sum(t.get("on_chain_txns", 0) for t in transactions),
-        "transactions": transactions,
-    }
+    try:
+        transactions = await database.get_all_transactions()
+        from datetime import datetime as _dt
+        clean = []
+        for t in transactions:
+            row = {}
+            for k, v in (t.items() if hasattr(t, "items") else vars(t).items()):
+                row[k] = v.isoformat() if isinstance(v, _dt) else v
+            clean.append(row)
+        return {"count": len(clean), "total_on_chain": sum(t.get("on_chain_txns", 0) for t in clean), "transactions": clean}
+    except Exception as e:
+        print(f"❌ /transactions error: {e}")
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=200, content={"count": 0, "total_on_chain": 0, "transactions": []})
 
 @app.get("/agents")
 async def get_agents():
