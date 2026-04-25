@@ -182,8 +182,9 @@ function App() {
       </motion.div>
 
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={fadeUp} transition={{ duration: 0.6 }}>
-        <section id="history" style={{ paddingTop: 80, paddingBottom: 120, width: '100%' }}>
-          <TransactionHistory transactions={transactions} />
+        <section id="history" style={{ paddingTop: 80, paddingBottom: 120 }}>
+          
+        <TransactionHistory transactions={transactions} />
         </section>
       </motion.div>
 
