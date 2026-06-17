@@ -1,78 +1,77 @@
-# 🧠 NeuralMarket
+<div align="center">
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+# NeuralMarket
 
-**NeuralMarket** is an intelligent HTTP client built in Python that automatically handles the **HTTP 402 (Payment Required)** payment flow. By integrating with Circle USDC, NeuralMarket allows for seamless, programmatic machine-to-machine micro-transactions.
+**HTTP 402 Payment Protocol Client**
+
+[![Python](https://img.shields.io/badge/Python_3.8+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![httpx](https://img.shields.io/badge/httpx-333333?style=flat-square)](https://www.python-httpx.org/)
+[![Circle](https://img.shields.io/badge/Circle_USDC-00D395?style=flat-square&logoColor=white)](https://www.circle.com/)
+[![License](https://img.shields.io/badge/License-MIT-444444?style=flat-square)](LICENSE)
+
+An intelligent HTTP client that automatically handles `402 Payment Required` responses — detecting invoices, executing Circle USDC transfers, and retrying requests with payment proof. Enables seamless machine-to-machine micro-transactions.
+
+</div>
 
 ---
 
-## ✨ Features
+## ▸ Features
 
-- **Automated HTTP 402 Flow:** Automatically detects `402 Payment Required` responses, parses the required invoice, and executes the payment seamlessly without breaking the application logic.
-- **Circle USDC Integration:** Uses the Circle client to process fast, low-fee USDC transfers.
-- **Asynchronous Execution:** Built on top of `httpx` to provide robust and fast asynchronous requests (`async/await`).
+- **Automated 402 Flow** — Detects `402 Payment Required` responses, parses the invoice, executes payment, and retries the request with proof — all in a single function call.
+- **Circle USDC Integration** — Fast, low-fee stablecoin transfers via the Circle Programmable Wallets API.
+- **Async-First** — Built on `httpx` with full `async/await` support for high-throughput M2M payment pipelines.
 
 ---
 
-## 🏗️ Payment Flow
+## ▸ Payment Flow
 
 ```mermaid
 sequenceDiagram
-    participant C as NeuralMarket Client
-    participant S as External API
-    participant Circle as Circle USDC API
-    
-    C->>S: GET /premium-data
-    S-->>C: 402 Payment Required (Invoice/Wallet ID)
-    C->>Circle: Execute USDC Transfer
-    Circle-->>C: Payment Confirmed (Tx Hash)
-    C->>S: GET /premium-data + Payment Proof
-    S-->>C: 200 OK (Premium Data)
+    participant Client as NeuralMarket
+    participant API as External API
+    participant Circle as Circle USDC
+
+    Client->>API: GET /premium-data
+    API-->>Client: 402 Payment Required (Invoice)
+    Client->>Circle: Execute USDC Transfer
+    Circle-->>Client: Tx Confirmed
+    Client->>API: GET /premium-data + Payment Proof
+    API-->>Client: 200 OK — Data Returned
 ```
 
 ---
 
-## ⚙️ Installation
+## ▸ Setup
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/shashankrpatil077-ctrl/NeuralMarket.git
-   cd NeuralMarket
-   ```
+```bash
+git clone https://github.com/shashankrpatil077-ctrl/NeuralMarket.git
+cd NeuralMarket
+pip install -r requirements.txt
+```
 
-2. **Install the dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+Create a `.env` file:
 
-3. **Configure Environment:**
-   Create a `.env` file in your root folder:
-   ```env
-   CIRCLE_API_KEY=your_circle_api_key
-   WALLET_ID=your_circle_wallet_id
-   ```
+```env
+CIRCLE_API_KEY=your_circle_api_key
+WALLET_ID=your_circle_wallet_id
+```
 
 ---
 
-## 🚀 Usage
-
-Import the `x402_fetch` function from the client to automatically handle 402 payments on any supported endpoint.
+## ▸ Usage
 
 ```python
 import asyncio
 from x402_client import x402_fetch
 
 async def main():
-    # Make a request to an endpoint that requires a payment
     response = await x402_fetch(
         url="https://api.example.com/premium-data",
         source_wallet_id="your_wallet_id",
-        max_price_usdc=0.05,  # Maximum amount of USDC you are willing to spend
+        max_price_usdc=0.05,
         method="GET"
     )
-    
-    print("Response Data:", response)
+    print("Response:", response)
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -80,5 +79,6 @@ if __name__ == "__main__":
 
 ---
 
-## 📜 License
-This project is licensed under the MIT License.
+## ▸ License
+
+MIT License — see [LICENSE](LICENSE) for details.
