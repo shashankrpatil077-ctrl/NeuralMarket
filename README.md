@@ -44,17 +44,46 @@
 ## ▸ How It Works
 
 ```mermaid
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#0d1117',
+    'primaryTextColor': '#c9d1d9',
+    'primaryBorderColor': '#30363d',
+    'lineColor': '#58a6ff',
+    'secondaryColor': '#161b22',
+    'tertiaryColor': '#21262d',
+    'actorBkg': '#1f2428',
+    'actorBorder': '#58a6ff',
+    'actorTextColor': '#fff',
+    'noteBkg': '#003d2e',
+    'noteBorder': '#2ea043',
+    'noteTextColor': '#fff',
+    'sequenceNumberColor': '#fff'
+  }
+}}%%
 sequenceDiagram
-    participant Client as NeuralMarket
-    participant API as External API
-    participant Circle as Circle USDC
+    autonumber
+    actor Client as 🤖 NeuralMarket Client
+    participant API as 🌐 External Paid API
+    participant Circle as 💸 Circle USDC Network
 
-    Client->>API: GET /premium-data
+    Client->>API: HTTP GET /premium-data
     API-->>Client: 402 Payment Required (Invoice)
-    Note over Client: Auto-detect invoice & amount
-    Client->>Circle: Execute USDC Transfer
-    Circle-->>Client: Tx Confirmed (Hash)
-    Client->>API: GET /premium-data + Payment Proof
+    
+    rect rgb(31, 36, 40)
+    Note over Client: Auto-detects invoice & USDC amount
+    end
+    
+    Client->>Circle: Execute USDC Transfer (Wallet ➔ Wallet)
+    Circle-->>Client: Tx Confirmed (TxHash Proof)
+    
+    Client->>API: HTTP GET /premium-data + X-Payment-Proof
+    
+    rect rgb(0, 61, 46)
+    Note over API: Validates TxHash on-chain
+    end
+    
     API-->>Client: 200 OK — Data Returned
 ```
 
