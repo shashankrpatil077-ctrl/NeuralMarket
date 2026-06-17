@@ -69,14 +69,14 @@ graph TB
         G["Paid API Endpoint"]:::external
     end
 
-    A -->|1. fetch()| B
+    A -->|1. fetch| B
     B -->|2. Initial Request| G
     G -.->|3. HTTP 402 Payment Required| C
     C -->|4. Parse & Authorize| E
     E -->|5. Settle On-Chain| F
     F -.->|6. TxHash Proof| D
     D -->|7. Retry with Proof Header| G
-    G -.->|8. HTTP 200 OK (Data)| A
+    G -.->|8. HTTP 200 OK Data| A
 ```
 
 ---
