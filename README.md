@@ -64,9 +64,9 @@
 }}%%
 sequenceDiagram
     autonumber
-    actor Client as 🤖 NeuralMarket Client
-    participant API as 🌐 External Paid API
-    participant Circle as 💸 Circle USDC Network
+    actor Client as NeuralMarket Client
+    participant API as External Paid API
+    participant Circle as Circle USDC Network
 
     Client->>API: HTTP GET /premium-data
     API-->>Client: 402 Payment Required (Invoice)
@@ -75,7 +75,7 @@ sequenceDiagram
     Note over Client: Auto-detects invoice & USDC amount
     end
     
-    Client->>Circle: Execute USDC Transfer (Wallet ➔ Wallet)
+    Client->>Circle: Execute USDC Transfer (Wallet to Wallet)
     Circle-->>Client: Tx Confirmed (TxHash Proof)
     
     Client->>API: HTTP GET /premium-data + X-Payment-Proof
