@@ -41,7 +41,59 @@
 
 ---
 
-## ▸ How It Works
+## ▸ System Architecture
+
+```mermaid
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#000000',
+    'primaryTextColor': '#F8F8F2',
+    'primaryBorderColor': '#333333',
+    'lineColor': '#444444',
+    'secondaryColor': '#0A0A0A',
+    'tertiaryColor': '#111111'
+  }
+}}%%
+graph TB
+    classDef client fill:#0A0A0A,stroke:#0070F3,stroke-width:1.5px,color:#FFFFFF,rx:6,ry:6
+    classDef core fill:#0A0A0A,stroke:#7928CA,stroke-width:1.5px,color:#FFFFFF,rx:6,ry:6
+    classDef payment fill:#0A0A0A,stroke:#FF0080,stroke-width:1.5px,color:#FFFFFF,rx:6,ry:6
+    classDef external fill:#0A0A0A,stroke:#50E3C2,stroke-width:1.5px,color:#FFFFFF,rx:6,ry:6
+
+    subgraph Client["Calling Application"]
+        A["AI Agent / Requesting Service"]:::client
+    end
+
+    subgraph Core["NeuralMarket Core (Async)"]
+        B["HTTP Interceptor"]:::core
+        C["402 Invoice Parser"]:::core
+        D["Retry & Verification Manager"]:::core
+    end
+
+    subgraph Circle["Circle Web3 Infrastructure"]
+        E["Programmable Wallet SDK"]:::payment
+        F["USDC Smart Contracts"]:::payment
+    end
+
+    subgraph ExtAPI["External Provider"]
+        G["Paid API Endpoint"]:::external
+    end
+
+    A -->|1. fetch()| B
+    B -->|2. Initial Request| G
+    G -.->|3. HTTP 402 Payment Required| C
+    C -->|4. Parse & Authorize| E
+    E -->|5. Settle On-Chain| F
+    F -.->|6. TxHash Proof| D
+    D -->|7. Retry with Proof Header| G
+    G -.->|8. HTTP 200 OK (Data)| A
+```
+
+---
+
+## ▸ Transaction Sequence
+
 
 ```mermaid
 %%{init: {
