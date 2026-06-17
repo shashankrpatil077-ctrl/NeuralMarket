@@ -18,3 +18,7 @@ __pycache__/
 *.old
 neuralmarket.db
 node_modules/
+
+# Secrets
+.env
+
