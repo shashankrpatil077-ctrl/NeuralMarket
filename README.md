@@ -47,19 +47,19 @@
 %%{init: {
   'theme': 'base',
   'themeVariables': {
-    'primaryColor': '#0d1117',
-    'primaryTextColor': '#c9d1d9',
-    'primaryBorderColor': '#30363d',
-    'lineColor': '#58a6ff',
-    'secondaryColor': '#161b22',
-    'tertiaryColor': '#21262d',
-    'actorBkg': '#1f2428',
-    'actorBorder': '#58a6ff',
-    'actorTextColor': '#fff',
-    'noteBkg': '#003d2e',
-    'noteBorder': '#2ea043',
-    'noteTextColor': '#fff',
-    'sequenceNumberColor': '#fff'
+    'primaryColor': '#000000',
+    'primaryTextColor': '#F8F8F2',
+    'primaryBorderColor': '#333333',
+    'lineColor': '#444444',
+    'secondaryColor': '#0A0A0A',
+    'tertiaryColor': '#111111',
+    'actorBkg': '#0A0A0A',
+    'actorBorder': '#0070F3',
+    'actorTextColor': '#FFFFFF',
+    'noteBkg': '#0A0A0A',
+    'noteBorder': '#7928CA',
+    'noteTextColor': '#FFFFFF',
+    'sequenceNumberColor': '#FFFFFF'
   }
 }}%%
 sequenceDiagram
@@ -71,7 +71,7 @@ sequenceDiagram
     Client->>API: HTTP GET /premium-data
     API-->>Client: 402 Payment Required (Invoice)
     
-    rect rgb(31, 36, 40)
+    rect rgb(10, 10, 10)
     Note over Client: Auto-detects invoice & USDC amount
     end
     
@@ -80,7 +80,7 @@ sequenceDiagram
     
     Client->>API: HTTP GET /premium-data + X-Payment-Proof
     
-    rect rgb(0, 61, 46)
+    rect rgb(10, 10, 10)
     Note over API: Validates TxHash on-chain
     end
     
