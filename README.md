@@ -45,10 +45,10 @@
 
 ```mermaid
 graph TB
-    classDef client fill:#0A0A0A,stroke:#0070F3,stroke-width:1.5px,color:#FFFFFF,rx:6,ry:6
-    classDef core fill:#0A0A0A,stroke:#7928CA,stroke-width:1.5px,color:#FFFFFF,rx:6,ry:6
-    classDef payment fill:#0A0A0A,stroke:#FF0080,stroke-width:1.5px,color:#FFFFFF,rx:6,ry:6
-    classDef external fill:#0A0A0A,stroke:#50E3C2,stroke-width:1.5px,color:#FFFFFF,rx:6,ry:6
+    classDef client fill:#0A0A0A,stroke:#0070F3,stroke-width:2px,color:#FFFFFF,rx:6,ry:6
+    classDef core fill:#0A0A0A,stroke:#7928CA,stroke-width:2px,color:#FFFFFF,rx:6,ry:6
+    classDef payment fill:#0A0A0A,stroke:#FF0080,stroke-width:2px,color:#FFFFFF,rx:6,ry:6
+    classDef external fill:#0A0A0A,stroke:#50E3C2,stroke-width:2px,color:#FFFFFF,rx:6,ry:6
 
     subgraph Client["Calling Application"]
         A["AI Agent / Requesting Service"]:::client
@@ -87,9 +87,9 @@ graph TB
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Client as NeuralMarket Client
-    participant API as External Paid API
-    participant Circle as Circle USDC Network
+    actor Client as "NeuralMarket Client"
+    participant API as "External Paid API"
+    participant Circle as "Circle USDC Network"
 
     Client->>API: HTTP GET /premium-data
     API-->>Client: 402 Payment Required (Invoice)
