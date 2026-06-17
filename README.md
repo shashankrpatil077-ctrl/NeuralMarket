@@ -15,6 +15,24 @@
 
 ---
 
+## 🏗️ Payment Flow
+
+```mermaid
+sequenceDiagram
+    participant C as NeuralMarket Client
+    participant S as External API
+    participant Circle as Circle USDC API
+    
+    C->>S: GET /premium-data
+    S-->>C: 402 Payment Required (Invoice/Wallet ID)
+    C->>Circle: Execute USDC Transfer
+    Circle-->>C: Payment Confirmed (Tx Hash)
+    C->>S: GET /premium-data + Payment Proof
+    S-->>C: 200 OK (Premium Data)
+```
+
+---
+
 ## ⚙️ Installation
 
 1. **Clone the repository:**
