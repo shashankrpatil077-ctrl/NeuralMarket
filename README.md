@@ -1,29 +1,47 @@
+<!-- Animated Header -->
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0d1117,50:1a1b27,100:161b22&height=200&section=header&text=NeuralMarket&fontSize=50&fontColor=58a6ff&animation=fadeIn&fontAlignY=35&desc=HTTP%20402%20Payment%20Protocol%20Client&descSize=18&descColor=8b949e&descAlignY=55" />
+
 <div align="center">
 
-# NeuralMarket
+[![Python](https://img.shields.io/badge/Python_3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![httpx](https://img.shields.io/badge/httpx-333333?style=for-the-badge)](https://www.python-httpx.org/)
+[![Circle](https://img.shields.io/badge/Circle_USDC-00D395?style=for-the-badge&logoColor=white)](https://www.circle.com/)
+[![License](https://img.shields.io/badge/License-MIT-444444?style=for-the-badge)](LICENSE)
 
-**HTTP 402 Payment Protocol Client**
+<br/>
 
-[![Python](https://img.shields.io/badge/Python_3.8+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![httpx](https://img.shields.io/badge/httpx-333333?style=flat-square)](https://www.python-httpx.org/)
-[![Circle](https://img.shields.io/badge/Circle_USDC-00D395?style=flat-square&logoColor=white)](https://www.circle.com/)
-[![License](https://img.shields.io/badge/License-MIT-444444?style=flat-square)](LICENSE)
-
-An intelligent HTTP client that automatically handles `402 Payment Required` responses — detecting invoices, executing Circle USDC transfers, and retrying requests with payment proof. Enables seamless machine-to-machine micro-transactions.
+<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=500&size=18&duration=3000&pause=1000&color=58A6FF&center=true&vCenter=true&width=600&lines=Automated+HTTP+402+Payment+Handling;Circle+USDC+Machine-to-Machine+Transactions;Async-First+%7C+Zero+Human+Intervention" alt="Typing SVG" />
 
 </div>
 
 ---
 
-## ▸ Features
+## ▸ Overview
 
-- **Automated 402 Flow** — Detects `402 Payment Required` responses, parses the invoice, executes payment, and retries the request with proof — all in a single function call.
-- **Circle USDC Integration** — Fast, low-fee stablecoin transfers via the Circle Programmable Wallets API.
-- **Async-First** — Built on `httpx` with full `async/await` support for high-throughput M2M payment pipelines.
+**NeuralMarket** is an intelligent HTTP client built in Python that automatically handles the `402 Payment Required` flow. By integrating with Circle USDC, it enables seamless, programmatic machine-to-machine micro-transactions — detect the invoice, pay it, retry the request, all in one function call.
 
 ---
 
-## ▸ Payment Flow
+## ▸ Features
+
+<table>
+  <tr>
+    <td width="25%" align="center"><strong>Automated 402 Flow</strong></td>
+    <td>Detects <code>402 Payment Required</code> responses, parses the invoice, executes payment, and retries with proof — all transparently within a single function call.</td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Circle USDC</strong></td>
+    <td>Fast, low-fee stablecoin transfers via the Circle Programmable Wallets API. No volatile crypto — payments are denominated in USD.</td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Async-First</strong></td>
+    <td>Built on <code>httpx</code> with full <code>async/await</code> support for high-throughput M2M payment pipelines.</td>
+  </tr>
+</table>
+
+---
+
+## ▸ How It Works
 
 ```mermaid
 sequenceDiagram
@@ -33,8 +51,9 @@ sequenceDiagram
 
     Client->>API: GET /premium-data
     API-->>Client: 402 Payment Required (Invoice)
+    Note over Client: Auto-detect invoice & amount
     Client->>Circle: Execute USDC Transfer
-    Circle-->>Client: Tx Confirmed
+    Circle-->>Client: Tx Confirmed (Hash)
     Client->>API: GET /premium-data + Payment Proof
     API-->>Client: 200 OK — Data Returned
 ```
@@ -77,8 +96,27 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+<details>
+<summary><strong>Advanced Configuration</strong></summary>
+<br/>
+
+| Parameter | Type | Description |
+|---|---|---|
+| `url` | `str` | Target API endpoint |
+| `source_wallet_id` | `str` | Your Circle wallet ID for payment source |
+| `max_price_usdc` | `float` | Maximum USDC you're willing to spend per request |
+| `method` | `str` | HTTP method — `GET`, `POST`, `PUT`, `DELETE` |
+| `headers` | `dict` | Optional custom headers |
+| `body` | `dict` | Optional request body for POST/PUT |
+| `timeout` | `float` | Request timeout in seconds (default: 30) |
+
+</details>
+
 ---
 
 ## ▸ License
 
 MIT License — see [LICENSE](LICENSE) for details.
+
+<!-- Animated Footer -->
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:161b22,50:1a1b27,100:0d1117&height=120&section=footer" />
